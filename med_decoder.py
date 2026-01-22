@@ -21,7 +21,7 @@ if not st.session_state.logged_in:
     with st.form("registration_form"):
         user_name = st.text_input("Full Name")
         user_email = st.text_input("Email Address")
-        submit = st.form_submit_button("Access Decoder")
+        submit = st.form_submit_button("Enter Assistant")
 
         if submit:
             if not user_name or not user_email:
