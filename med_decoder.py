@@ -31,27 +31,29 @@ if not st.session_state.logged_in:
                     # --- DIRECT KEYS ---
                     # --- DIRECT KEYS ---
                # --- SECURE KEYS (Using Streamlit Secrets) ---
-creds_dict = st.secrets["gcp_service_account"]
+try:
+            # All lines below must be indented by exactly 12 spaces (or 3 tabs)
+            creds_dict = st.secrets["gcp_service_account"]
 
-# --- CONNECT & WRITE (WITH UPDATED SCOPES) ---
-scopes = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+            # --- CONNECT & WRITE (WITH UPDATED SCOPES) ---
+            scopes = [
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
 
-creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-client = gspread.authorize(creds)
-                    
-                    sheet = client.open("Rx_Login_Tracker").sheet1
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
-                    
-                    # --- UNLOCK ---
-                    st.session_state.logged_in = True
-                    st.success(f"Welcome, {user_name}!")
-                    st.rerun()
-                    
-                except Exception as e:
+            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+            client = gspread.authorize(creds)
+
+            # --- DATABASE OPERATIONS ---
+            sheet = client.open("Rx_Login_Tracker").sheet1
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.append_row([current_time, user_name, user_email])
+
+            # Success! Update state and refresh
+            st.session_state.logged_in = True
+            st.rerun()
+
+        except Exception as e:
                     st.error(f"🚨 Connection Error: {e}")
 
     st.stop()
