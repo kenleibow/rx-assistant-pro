@@ -28,33 +28,28 @@ if not st.session_state.logged_in:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
-                    # 1. Get keys from the Streamlit "Vault"
                     creds_dict = st.secrets["gcp_service_account"]
-
-                    # 2. Set the permissions
-                    scopes = [
-                        "https://www.googleapis.com/auth/spreadsheets",
-                        "https://www.googleapis.com/auth/drive"
-                    ]
-
-                    # 3. Connect to Google
+                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
                     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
                     client = gspread.authorize(creds)
                     
-                    # 4. Open the sheet and write the data
                     sheet = client.open("Rx_Login_Tracker").sheet1
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     sheet.append_row([current_time, user_name, user_email])
 
-                    # 5. Success! Unlock the app
                     st.session_state.logged_in = True
                     st.rerun()
 
                 except Exception as e:
                     st.error(f"🚨 Connection Error: {e}")
 
-    # This st.stop() must be lined up perfectly with 'with st.form'
-    st.stop()
+    # --- THIS WAS THE ERROR ---
+    # Moved inside the 'if not logged_in' block
+    st.stop() 
+
+# ==========================================
+# APP CONTINUES BELOW ONLY IF LOGGED IN
+# ==========================================
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
 
