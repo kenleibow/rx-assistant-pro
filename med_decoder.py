@@ -32,29 +32,31 @@ if not st.session_state.logged_in:
                     # --- DIRECT KEYS ---
                # --- SECURE KEYS (Using Streamlit Secrets) ---
 try:
-            # All lines below must be indented by exactly 12 spaces (or 3 tabs)
+            # Connect to Google using the Secrets Vault
             creds_dict = st.secrets["gcp_service_account"]
 
-            # --- CONNECT & WRITE (WITH UPDATED SCOPES) ---
+            # Set up the permissions
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
             ]
 
+            # Authorize and open the sheet
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
             client = gspread.authorize(creds)
-
-            # --- DATABASE OPERATIONS ---
+            
             sheet = client.open("Rx_Login_Tracker").sheet1
+            
+            # Log the user's info
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             sheet.append_row([current_time, user_name, user_email])
 
-            # Success! Update state and refresh
+            # Unlock the app
             st.session_state.logged_in = True
             st.rerun()
 
         except Exception as e:
-                    st.error(f"🚨 Connection Error: {e}")
+            st.error(f"🚨 Connection Error: {e}")
 
     st.stop()
 # --- CONFIGURATION ---
