@@ -364,7 +364,7 @@ def check_comorbidities(selected_conditions, is_smoker, current_bmi):
 # UPDATED ORDER: Single Drug | Multi-Med | Impairment Analyst
 tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
 
-# --- TAB 1: Single Drug ---
+# --- TAB 1: Single Drug (Robust Version) ---
 with tab1:
     col_a, col_b = st.columns([4, 1])
     with col_a: st.markdown("### 🔍 Search by Medication Name")
@@ -393,31 +393,26 @@ with tab1:
                         st.markdown("**❓ Field Questions:**")
                         for q in insight['questions']: st.write(f"✅ *{q}*")
                     
-                    with st.expander("Show FDA Official Text"): st.write(indications)
+                    with st.expander("Show FDA Official Text"): 
+                        st.write(indications)
 
-                    # PDF
+                    # --- FORCED BUTTON DISPLAY ---
+                    st.divider()
                     report_text = [f"Risk: {insight['risk']}", f"Est. Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                     pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
-                    st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf")
+                    
+                    # We use a unique key to ensure the button doesn't vanish on rerun
+                    st.download_button(
+                        label="📄 Download PDF Report",
+                        data=pdf_data,
+                        file_name=f"{brand}_report.pdf",
+                        mime="application/pdf",
+                        key=f"btn_{brand}" 
+                    )
                 else:
-                    # --- SPELL CHECK LOGIC (NEW v9.4 - CALLBACK) ---
-                    matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
-                    st.error(f"❌ '{single_drug}' not found in FDA Database.")
-                    if matches:
-                        suggested_word = matches[0]
-                        st.info(f"💡 Did you mean: **{suggested_word}**?")
-                        
-                        # SAVE TO TEMP STATE for callback to read
-                        st.session_state.suggestion = suggested_word
-                        # CALLBACK on button press
-                        st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback)
-                        
-                    else:
-                        st.warning("Double check spelling. Brand names are required for FDA search.")
+                    st.error("Drug not found.")
             except Exception as e:
-                # REVEAL REAL ERROR if connection fails
-                st.error(f"Connection/Data Error: {e}")
-
+                st.error(f"Error: {e}")
 # --- TAB 2: MULTI-MED ---
 with tab2:
     col_x, col_y = st.columns([4, 1])
