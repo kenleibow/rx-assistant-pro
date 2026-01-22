@@ -23,40 +23,38 @@ if not st.session_state.logged_in:
         user_email = st.text_input("Email Address")
         submit = st.form_submit_button("Enter App")
 
-        if submit:
+if submit:
             if not user_name or not user_email:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
-                    # --- DIRECT KEYS ---
-                    # --- DIRECT KEYS ---
-               # --- SECURE KEYS (Using Streamlit Secrets) ---
-try:
-            # Connect to Google using the Secrets Vault
-            creds_dict = st.secrets["gcp_service_account"]
+                    # Everything below this is indented to stay inside the 'try'
+                    creds_dict = st.secrets["gcp_service_account"]
 
-            # Set up the permissions
-            scopes = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
+                    # Set up the permissions
+                    scopes = [
+                        "https://www.googleapis.com/auth/spreadsheets",
+                        "https://www.googleapis.com/auth/drive"
+                    ]
 
-            # Authorize and open the sheet
-            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            client = gspread.authorize(creds)
-            
-            sheet = client.open("Rx_Login_Tracker").sheet1
-            
-            # Log the user's info
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.append_row([current_time, user_name, user_email])
+                    # Authorize and open the sheet
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                    client = gspread.authorize(creds)
+                    
+                    sheet = client.open("Rx_Login_Tracker").sheet1
+                    
+                    # Log the user's info
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sheet.append_row([current_time, user_name, user_email])
 
-            # Unlock the app
-            st.session_state.logged_in = True
-            st.rerun()
+                    # Unlock the app
+                    st.session_state.logged_in = True
+                    st.rerun()
 
-        except Exception as e:
-            st.error(f"🚨 Connection Error: {e}")
+                except Exception as e:
+                    st.error(f"🚨 Connection Error: {e}")
+
+        st.stop()
 
     st.stop()
 # --- CONFIGURATION ---
