@@ -30,28 +30,17 @@ if not st.session_state.logged_in:
                 try:
                     # --- DIRECT KEYS ---
                     # --- DIRECT KEYS ---
-                    creds_dict = {
-                        "type": "service_account",
-                        "project_id": "rx-assistant-485114",
-                        "private_key_id": "46df0a9935ebff7804b0bc7ffbc2c4bd9919b1fb",
-                        "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCTsoglvTxDMEfA\nZ3hRnQvB7Z08avEgjq3jl5C7Vm0I5LfnJxVMQFN65+EMPNSKDxq/aqErXYBE6pRF\noDAO7bvnq1jCUtIJ1hozwiU0ITcvBWs5ph3jFviXRNyJ/cOsUUOaIBk1N3oQbC0v\nZC2Pq3ThgVIAACz16J3iW4ng/KtBMm+rXelsPPDkgO6OrQroYihm8YJk4dCAC0JL\nMnJ2LJEj8SeNx51Z8U3kG1XqqN54Fuwp+nEYDcwkRLoUDRcU8p6vBMQl+HgikS4Q\nFGW8qmvesEZWQko6aTNfGXVCEyXHjYQSZEcJs5ETYzFQvLqftgFaZxdFDSJ15hoG\ntN2+W9MtAgMBAAECggEAG2zbCZDwM/Su2hwMdDEiagXufLXJ5PcBdIGkExk7AVwB\nBwfTlVdbePa+K+jOuX0RBSquVzBTPVjGpAAY9GiyC9ReFKVO0ZtDPcmm4V1qkw1h\nSfDd21lcWzBi+C+aCjEDycZ8j8xnms2PfV2PdT5L44TBHnVp49aoHIxNV6zrOt1z\nlhhO8SLOUGOecTDNnNhgZM7DcjVUsyLEEeNec+nXfvB7UfFI8S+ktK8d4C5QFpH7\nRMcJj6ibx9wj9t1RQNvQlxPvna69YnyaklBVbjyH1LWc3TVQye2agjw95yaIllhc\nrZnnQijG5L4/uwooThBb1BW4UpQXc6IO30ea+U/ZSQKBgQDOVec5te6k91U5+oWk\nPb+3JfPtRZpaW2UdTvGYzLpxBF9BiYC3gCznPvV6It+IpzRhZHW6Jb5C2goDSD2U\CX6tmWLRPbq9Vyr1+hCovY+ECgh22SKhSekFTJsMyq7CNSkjXy7H+IkwVmiu3TeG\nhTlyHKY7ccwHzxsoZ1cGLUz+aQKBgQC3P24SM5hEhykG2gr+xiaS3dTCxwuyyC2O\n5XNuT7EsljzubX1LtetCBMoVwEhu0LBaISG67HAaLi8VoRBBQRWX8azaLnAp36m+\n1SUXiryODUQp6HAxhnEI8NMb8VEHvocr/P+dLf7YwyOoY9cB+qI3pVjjGPy+tMrc\nDYkuxTzeJQKBgQC4GtYSHE8vSrD05p/QCHjDhk277FrpPJtgJ0xStnm01d3YsEP1\nd5yZSQfnTq59VBPcwrJ4wayeIcbFXvPy3vX1F+OgJ6AzyU8/4zxyE5G2ku0yflPz\n7erJG61NIJwGFUD7mrY3H3/pbXBCdohQsxaqxv1cFRGj9huZVXvEuy7z4QKBgQCA\n0xXVs/HzEzYTfAxIyhLqIwtlFzuxJytoDwTUYzACUWhqkgyIwk6ureFH41LInOut\noScuWvQAY8F0KjPcPB4rIJrNE+KEfZm+7+dQopcmIktuTts45fPnPi6bsU2u7RHo\nKcelv2UvDBiwU+gemw2ZoyNXHATrKPyIMPflKoI9BQKBgEsHamqyMa+/ZibbRm8I\nQmA8dOu1TEMfda8dJojuAfBVhF3b1MCBWzzIIdtyjHumcOJE5Op5ebhh4fexqH21\nz4qBL7hkEXsBPDXYMeWpJq6Nofpw5nKdoIu6gPFsZ056RzDNiUI7yi09lcz9LvBv\nl23eFaGsDK6MIMmUjYHUwp9H\n-----END PRIVATE KEY-----\n",
-                        "client_email": "rx-logger@rx-assistant-485114.iam.gserviceaccount.com",
-                        "client_id": "101979612558880555948",
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/rx-logger%40rx-assistant-485114.iam.gserviceaccount.com"
-                    }
+               # --- SECURE KEYS (Using Streamlit Secrets) ---
+creds_dict = st.secrets["gcp_service_account"]
 
-                    # --- CONNECT & WRITE (WITH UPDATED SCOPES) ---
-                    # We added the Google Drive scope here to fix the 403 error
-                    scopes = [
-                        "https://www.googleapis.com/auth/spreadsheets",
-                        "https://www.googleapis.com/auth/drive"
-                    ]
-                    
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
+# --- CONNECT & WRITE (WITH UPDATED SCOPES) ---
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+client = gspread.authorize(creds)
                     
                     sheet = client.open("Rx_Login_Tracker").sheet1
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
