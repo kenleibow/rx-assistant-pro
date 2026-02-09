@@ -14,23 +14,28 @@ import json
 # ==========================================
 
 def get_google_credentials():
-    # 1. Check if we are on Railway (Environment Variables)
-    if "GCP_SERVICE_ACCOUNT" in os.environ:
-        try:
-            return json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
-        except:
-            pass
-            
-    # 2. Check if we are on Streamlit Cloud (Secrets)
-    try:
-        if "GCP_SERVICE_ACCOUNT" in st.secrets:
-            return st.secrets["GCP_SERVICE_ACCOUNT"]
-        elif "gcp_service_account" in st.secrets:
-            return st.secrets["gcp_service_account"]
-    except:
-        # If no secrets are found at all, don't crash, just return None
-        return None
+    import os
+    import json
     
+    # Check Railway's Environment Variables first
+    # This avoids calling st.secrets entirely so it won't crash
+    gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
+    
+    if gcp_json:
+        try:
+            return json.loads(gcp_json)
+        except Exception as e:
+            print(f"Error parsing JSON: {e}")
+            return None
+            
+    # If we are NOT on Railway, only THEN try st.secrets (with a safety net)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "GCP_SERVICE_ACCOUNT" in st.secrets:
+            return st.secrets["GCP_SERVICE_ACCOUNT"]
+    except:
+        return None
+
     return None
 
 # Load the credentials using the function above
