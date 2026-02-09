@@ -69,16 +69,21 @@ if submit:
         else:
             try:
                 import os
-                # We pull the individual pieces we just added to Railway
-                p_key = os.environ.get("PRIVATE_KEY")
-                c_email = os.environ.get("CLIENT_EMAIL")
-                p_id = os.environ.get("PROJECT_ID")
+                # We check for both UPPERCASE and lowercase names to be safe
+                p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
+                c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
+                p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                 s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
 
-                if not p_key or not c_email:
-                    st.error("🚨 Missing credentials in Railway variables.")
+                # This tells us EXACTLY which one is missing
+                if not p_key:
+                    st.error("🚨 'PRIVATE_KEY' is missing in Railway.")
+                elif not c_email:
+                    st.error("🚨 'CLIENT_EMAIL' is missing in Railway.")
+                elif not s_id:
+                    st.error("🚨 'sheet_id' is missing in Railway.")
                 else:
-                    # Manually build the dictionary for Google
+                    # Build the key manually
                     creds_dict = {
                         "type": "service_account",
                         "project_id": p_id,
