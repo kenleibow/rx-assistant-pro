@@ -51,10 +51,10 @@ with st.form("login_form"):
         submit = st.form_submit_button("Access Rx Assistant Pro")
 
 if submit:
-    if not user_name or not user_email:
-        st.error("⚠️ Please fill in BOTH Name and Email.")
-    else:
-        try:
+        if not user_name or not user_email:
+            st.error("⚠️ Please fill in BOTH Name and Email.")
+        else:
+            try:
                 import os
                 import json
                 creds_dict = None
@@ -82,7 +82,6 @@ if submit:
                 st.error(f"🚨 Connection Error: {e}")
 
     st.stop()
-
 # --- CONFIGURATION (Reached only if logged in) ---
 st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
 
