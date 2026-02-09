@@ -46,14 +46,14 @@ if not st.session_state.logged_in:
     st.write("Please provide your details to access the tool.")
     
 with st.form("login_form"):
-    user_name = st.text_input("Name")
+        user_name = st.text_input("Name")
         user_email = st.text_input("Email")
         submit = st.form_submit_button("Access Rx Assistant Pro")
 
     if submit:
-        if not user_name or not user_email:    
+        if not user_name or not user_email:
             st.error("⚠️ Please fill in BOTH Name and Email.")
-        else:    
+        else:
             try:
                 import os
                 import json
