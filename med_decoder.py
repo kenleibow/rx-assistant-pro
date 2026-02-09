@@ -68,35 +68,31 @@ if submit:
             st.error("⚠️ Please fill in BOTH Name and Email.")
         else:
             try:
-                # 1. Grab the big block from Railway
-                raw_json = os.environ.get("GCP_SERVICE_ACCOUNT")
-                
-                if not raw_json:
-                    st.error("🚨 Variable 'GCP_SERVICE_ACCOUNT' not found in Railway.")
-                else:
-                    # 2. Convert text to dictionary
-                    creds_dict = json.loads(raw_json)
-                    
-                    # 3. Clean the key (This is where the NoneType error was happening)
-                    # We use .get() to be safe, but we know it's in your JSON now
-                    if creds_dict.get("private_key"):
-                        creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
-                    else:
-                        raise Exception("JSON is missing the 'private_key' field.")
+                import os
+                # We pull the individual pieces we just added to Railway
+                p_key = os.environ.get("PRIVATE_KEY")
+                c_email = os.environ.get("CLIENT_EMAIL")
+                p_id = os.environ.get("PROJECT_ID")
+                s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
 
-                    # 4. Connect to Google
+                if not p_key or not c_email:
+                    st.error("🚨 Missing credentials in Railway variables.")
+                else:
+                    # Manually build the dictionary for Google
+                    creds_dict = {
+                        "type": "service_account",
+                        "project_id": p_id,
+                        "private_key": p_key.replace('\\n', '\n'),
+                        "client_email": c_email,
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+
                     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
                     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
                     client = gspread.authorize(creds)
                     
-                    # 5. Open the sheet
-                    s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
-                    if not s_id:
-                        raise Exception("Variable 'sheet_id' is missing in Railway.")
-                        
                     sheet = client.open_by_key(s_id).sheet1
                     
-                    # 6. Log the user
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     sheet.append_row([current_time, user_name, user_email])
 
