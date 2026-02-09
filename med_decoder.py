@@ -53,8 +53,7 @@ def get_gspread_client():
     return None
 
 # Load the credentials using the function above
-google_secrets = get_google_credentials()
-
+google_secrets = get_gspread_client()
 # ==========================================
 # 🔐 REGISTRATION & LOGGING SECTION
 # ==========================================
