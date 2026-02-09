@@ -68,32 +68,35 @@ if submit:
             st.error("⚠️ Please fill in BOTH Name and Email.")
         else:
             try:
-                import os
-                import json
+                # 1. Grab the big block from Railway
+                raw_json = os.environ.get("GCP_SERVICE_ACCOUNT")
                 
-                # 1. Grab the big JSON block we put in Railway
-                creds_json = os.environ.get("GCP_SERVICE_ACCOUNT")
-                
-                if not creds_json:
-                    st.error("🚨 GCP_SERVICE_ACCOUNT variable not found in Railway.")
+                if not raw_json:
+                    st.error("🚨 Variable 'GCP_SERVICE_ACCOUNT' not found in Railway.")
                 else:
-                    # 2. Parse the JSON
-                    creds_dict = json.loads(creds_json)
+                    # 2. Convert text to dictionary
+                    creds_dict = json.loads(raw_json)
                     
-                    # 3. Fix the private key formatting
-                    if "private_key" in creds_dict:
+                    # 3. Clean the key (This is where the NoneType error was happening)
+                    # We use .get() to be safe, but we know it's in your JSON now
+                    if creds_dict.get("private_key"):
                         creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+                    else:
+                        raise Exception("JSON is missing the 'private_key' field.")
 
                     # 4. Connect to Google
                     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
                     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
                     client = gspread.authorize(creds)
                     
-                    # 5. Open the sheet (using the sheet_id variable from Railway)
+                    # 5. Open the sheet
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
+                    if not s_id:
+                        raise Exception("Variable 'sheet_id' is missing in Railway.")
+                        
                     sheet = client.open_by_key(s_id).sheet1
                     
-                    # 6. Log the entry
+                    # 6. Log the user
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     sheet.append_row([current_time, user_name, user_email])
 
