@@ -15,44 +15,37 @@ import json
 
 def get_gspread_client():
     import os
+    import json
     import gspread
     from google.oauth2.service_account import Credentials
 
-    # 1. Try to build the key from Railway variables
+    # 1. Try to build the key from the big Railway JSON variable
     try:
-        if os.environ.get("private_key"):
-            creds_dict = {
-                "type": "service_account",
-                "project_id": os.environ.get("project_id"),
-                "private_key_id": os.environ.get("private_key_id"),
-                "private_key": os.environ.get("private_key").replace('\\n', '\n'),
-                "client_email": os.environ.get("client_email"),
-                "client_id": os.environ.get("client_id"),
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": os.environ.get("client_x509_cert_url")
-            }
+        gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
+        if gcp_json:
+            creds_dict = json.loads(gcp_json)
+            # Fix the private key formatting just in case
+            if "private_key" in creds_dict:
+                creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+            
             scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
             return gspread.authorize(creds)
     except Exception as e:
         print(f"Railway connection failed: {e}")
 
-    # 2. If Railway fails, ONLY THEN try Streamlit Secrets (with a safety net)
+    # 2. Safety Fallback for local testing/Streamlit Cloud
     try:
         import streamlit as st
-        # This check prevents the 'No secrets found' crash
-        if hasattr(st, "secrets") and len(st.secrets) > 0:
-            if "gcp_service_account" in st.secrets:
-                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
-                return gspread.authorize(creds)
+        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
+            return gspread.authorize(creds)
     except:
         pass
 
     return None
 
-# Load the credentials using the function above
+# Load the credentials
 google_secrets = get_gspread_client()
 # ==========================================
 # 🔐 REGISTRATION & LOGGING SECTION
