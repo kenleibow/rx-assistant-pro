@@ -69,33 +69,36 @@ if submit:
         else:
             try:
                 import os
-                # We build the credentials using your 8 Railway variables
-                creds_dict = {
-                    "type": "service_account",
-                    "project_id": os.environ.get("project_id"),
-                    "private_key_id": os.environ.get("private_key_id"),
-                    "private_key": os.environ.get("private_key").replace('\\n', '\n'),
-                    "client_email": os.environ.get("client_email"),
-                    "client_id": os.environ.get("client_id"),
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                    "client_x509_cert_url": os.environ.get("client_x509_cert_url")
-                }
-
-                scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                client = gspread.authorize(creds)
+                import json
                 
-                # Get the Sheet ID from your variables
-                sheet_id = os.environ.get("sheet_id")
-                sheet = client.open_by_key(sheet_id).sheet1
+                # 1. Grab the big JSON block we put in Railway
+                creds_json = os.environ.get("GCP_SERVICE_ACCOUNT")
                 
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([current_time, user_name, user_email])
+                if not creds_json:
+                    st.error("🚨 GCP_SERVICE_ACCOUNT variable not found in Railway.")
+                else:
+                    # 2. Parse the JSON
+                    creds_dict = json.loads(creds_json)
+                    
+                    # 3. Fix the private key formatting
+                    if "private_key" in creds_dict:
+                        creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
 
-                st.session_state.logged_in = True
-                st.rerun()
+                    # 4. Connect to Google
+                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                    client = gspread.authorize(creds)
+                    
+                    # 5. Open the sheet (using the sheet_id variable from Railway)
+                    s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
+                    sheet = client.open_by_key(s_id).sheet1
+                    
+                    # 6. Log the entry
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sheet.append_row([current_time, user_name, user_email])
+
+                    st.session_state.logged_in = True
+                    st.rerun()
             except Exception as e:
                 st.error(f"🚨 Connection Error: {e}")
 
