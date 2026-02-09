@@ -50,38 +50,38 @@ with st.form("login_form"):
     user_email = st.text_input("Email")
     submit = st.form_submit_button("Access Rx Assistant Pro")
 
-    if submit:
-        if not user_name or not user_email:
-            st.error("⚠️ Please fill in BOTH Name and Email.")
-        else:
-            try:
-                import os
-                import json
-                creds_dict = None
-                if "GCP_SERVICE_ACCOUNT" in os.environ:
-                    creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
-                elif "gcp_service_account" in st.secrets:
-                    creds_dict = st.secrets["gcp_service_account"]
-                
-                if not creds_dict:
-                    raise Exception("No Google Credentials found.")
+if submit:
+    if not user_name or not user_email:
+        st.error("⚠️ Please fill in BOTH Name and Email.")
+    else:
+        try:
+            import os
+            import json
+            creds_dict = None
+            if "GCP_SERVICE_ACCOUNT" in os.environ:
+                creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
+            elif "gcp_service_account" in st.secrets:
+                creds_dict = st.secrets["gcp_service_account"]
+            
+            if not creds_dict:
+                raise Exception("No Google Credentials found.")
 
-                scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                client = gspread.authorize(creds)
-                
-                sheet_id = os.environ.get("SHEET_ID") or st.secrets.get("sheet_id")
-                sheet = client.open_by_key(sheet_id).sheet1
-                
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([current_time, user_name, user_email])
+            scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+            client = gspread.authorize(creds)
+            
+            sheet_id = os.environ.get("SHEET_ID") or st.secrets.get("sheet_id")
+            sheet = client.open_by_key(sheet_id).sheet1
+            
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.append_row([current_time, user_name, user_email])
 
-                st.session_state.logged_in = True
-                st.rerun()
-            except Exception as e:
-                st.error(f"🚨 Connection Error: {e}")
+            st.session_state.logged_in = True
+            st.rerun()
+        except Exception as e:
+            st.error(f"🚨 Connection Error: {e}")
 
-    st.stop()
+st.stop()
 # --- CONFIGURATION (Reached only if logged in) ---
 st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
 
