@@ -45,12 +45,12 @@ if not st.session_state.logged_in:
     st.title("Rx Assistant - Registration")
     st.write("Please provide your details to access the tool.")
     
-    with st.form("registration_form"):
-        user_name = st.text_input("Full Name")
-        user_email = st.text_input("Email Address")
-        submit = st.form_submit_button("Enter Assistant")
+with st.form("login_form"):
+        user_name = st.text_input("Name")
+        user_email = st.text_input("Email")
+        submit = st.form_submit_button("Access Rx Assistant Pro")
 
-  if submit:
+    if submit:
         if not user_name or not user_email:
             st.error("⚠️ Please fill in BOTH Name and Email.")
         else:
@@ -58,8 +58,6 @@ if not st.session_state.logged_in:
                 import os
                 import json
                 creds_dict = None
-                
-                # Handling Railway vs Streamlit secrets
                 if "GCP_SERVICE_ACCOUNT" in os.environ:
                     creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
                 elif "gcp_service_account" in st.secrets:
