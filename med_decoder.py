@@ -14,21 +14,23 @@ import json
 # ==========================================
 
 def get_google_credentials():
-    # 1. Try Railway Environment Variable (Primary)
+    # 1. Check if we are on Railway (Environment Variables)
     if "GCP_SERVICE_ACCOUNT" in os.environ:
         try:
-            # We parse the string into a real dictionary
-            creds_info = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
-            return creds_info
-        except Exception as e:
-            st.error(f"Error parsing Railway Secret: {e}")
+            return json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
+        except:
+            pass
+            
+    # 2. Check if we are on Streamlit Cloud (Secrets)
+    try:
+        if "GCP_SERVICE_ACCOUNT" in st.secrets:
+            return st.secrets["GCP_SERVICE_ACCOUNT"]
+        elif "gcp_service_account" in st.secrets:
+            return st.secrets["gcp_service_account"]
+    except:
+        # If no secrets are found at all, don't crash, just return None
+        return None
     
-    # 2. Try Streamlit Cloud secrets (Backup)
-    if "GCP_SERVICE_ACCOUNT" in st.secrets:
-        return st.secrets["GCP_SERVICE_ACCOUNT"]
-    
-    # 3. If neither exist, show the error you saw
-    st.error("No Google Secrets found! Check Railway Variables.")
     return None
 
 # Load the credentials using the function above
