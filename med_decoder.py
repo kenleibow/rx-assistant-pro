@@ -6,6 +6,33 @@ from datetime import datetime
 import requests
 from fpdf import FPDF
 import difflib
+import os
+import json
+
+# ==========================================
+# 🔐 SECRETS & CLOUD HANDSHAKE
+# ==========================================
+
+def get_google_credentials():
+    # 1. Try Railway Environment Variable (Primary)
+    if "GCP_SERVICE_ACCOUNT" in os.environ:
+        try:
+            # We parse the string into a real dictionary
+            creds_info = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
+            return creds_info
+        except Exception as e:
+            st.error(f"Error parsing Railway Secret: {e}")
+    
+    # 2. Try Streamlit Cloud secrets (Backup)
+    if "GCP_SERVICE_ACCOUNT" in st.secrets:
+        return st.secrets["GCP_SERVICE_ACCOUNT"]
+    
+    # 3. If neither exist, show the error you saw
+    st.error("No Google Secrets found! Check Railway Variables.")
+    return None
+
+# Load the credentials using the function above
+google_secrets = get_google_credentials()
 
 # ==========================================
 # 🔐 REGISTRATION & LOGGING SECTION
@@ -23,13 +50,26 @@ if not st.session_state.logged_in:
         user_email = st.text_input("Email Address")
         submit = st.form_submit_button("Enter Assistant")
 
-        if submit:
+   if submit:
             if not user_name or not user_email:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
-                    # 1. Get keys from the Streamlit "Vault"
-                    creds_dict = st.secrets["gcp_service_account"]
+                    # 1. Get keys (Try Railway first, then Streamlit Vault)
+                    import os
+                    import json
+
+                    creds_dict = None
+                    
+                    # Check Railway/Environment Variables
+                    if "GCP_SERVICE_ACCOUNT" in os.environ:
+                        creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
+                    # Check Streamlit Cloud Vault (Fallback)
+                    elif "gcp_service_account" in st.secrets:
+                        creds_dict = st.secrets["gcp_service_account"]
+                    
+                    if not creds_dict:
+                        raise Exception("No Google Credentials found in Railway Variables or Streamlit Secrets.")
 
                     # 2. Set the permissions
                     scopes = [
@@ -42,7 +82,10 @@ if not st.session_state.logged_in:
                     client = gspread.authorize(creds)
                     
                     # 4. Open the sheet and write the data
-                    sheet = client.open("Rx_Login_Tracker").sheet1
+                    # (Ensure the Sheet Name and SHEET_ID variable match your setup)
+                    sheet_id = os.environ.get("SHEET_ID") or st.secrets.get("sheet_id")
+                    sheet = client.open_by_key(sheet_id).sheet1
+                    
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     sheet.append_row([current_time, user_name, user_email])
 
