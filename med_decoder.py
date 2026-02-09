@@ -50,53 +50,39 @@ if not st.session_state.logged_in:
         user_email = st.text_input("Email Address")
         submit = st.form_submit_button("Enter Assistant")
 
-   if submit:
-            if not user_name or not user_email:
-                st.error("⚠️ Please fill in BOTH Name and Email.")
-            else:
-                try:
-                    # 1. Get keys (Try Railway first, then Streamlit Vault)
-                    import os
-                    import json
+  if submit:
+        if not user_name or not user_email:
+            st.error("⚠️ Please fill in BOTH Name and Email.")
+        else:
+            try:
+                import os
+                import json
+                creds_dict = None
+                
+                # Handling Railway vs Streamlit secrets
+                if "GCP_SERVICE_ACCOUNT" in os.environ:
+                    creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
+                elif "gcp_service_account" in st.secrets:
+                    creds_dict = st.secrets["gcp_service_account"]
+                
+                if not creds_dict:
+                    raise Exception("No Google Credentials found.")
 
-                    creds_dict = None
-                    
-                    # Check Railway/Environment Variables
-                    if "GCP_SERVICE_ACCOUNT" in os.environ:
-                        creds_dict = json.loads(os.environ.get("GCP_SERVICE_ACCOUNT"))
-                    # Check Streamlit Cloud Vault (Fallback)
-                    elif "gcp_service_account" in st.secrets:
-                        creds_dict = st.secrets["gcp_service_account"]
-                    
-                    if not creds_dict:
-                        raise Exception("No Google Credentials found in Railway Variables or Streamlit Secrets.")
+                scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                client = gspread.authorize(creds)
+                
+                sheet_id = os.environ.get("SHEET_ID") or st.secrets.get("sheet_id")
+                sheet = client.open_by_key(sheet_id).sheet1
+                
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                sheet.append_row([current_time, user_name, user_email])
 
-                    # 2. Set the permissions
-                    scopes = [
-                        "https://www.googleapis.com/auth/spreadsheets",
-                        "https://www.googleapis.com/auth/drive"
-                    ]
+                st.session_state.logged_in = True
+                st.rerun()
+            except Exception as e:
+                st.error(f"🚨 Connection Error: {e}")
 
-                    # 3. Connect to Google
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
-                    
-                    # 4. Open the sheet and write the data
-                    # (Ensure the Sheet Name and SHEET_ID variable match your setup)
-                    sheet_id = os.environ.get("SHEET_ID") or st.secrets.get("sheet_id")
-                    sheet = client.open_by_key(sheet_id).sheet1
-                    
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
-
-                    # 5. Success! Unlock the app
-                    st.session_state.logged_in = True
-                    st.rerun()
-
-                except Exception as e:
-                    st.error(f"🚨 Connection Error: {e}")
-
-    # STOP HERE ONLY IF NOT LOGGED IN
     st.stop()
 
 # --- CONFIGURATION (Reached only if logged in) ---
