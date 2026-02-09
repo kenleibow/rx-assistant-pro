@@ -9,6 +9,9 @@ import difflib
 import os
 import json
 
+# THIS MUST BE THE FIRST STREAMLIT LINE
+st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
+
 # ==========================================
 # 🔐 SECRETS & CLOUD HANDSHAKE
 # ==========================================
@@ -54,7 +57,6 @@ google_secrets = get_gspread_client()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# IF NOT LOGGED IN, SHOW REGISTRATION
 if not st.session_state.logged_in:
     st.title("Rx Assistant - Registration")
     st.write("Please provide your details to access the tool.")
@@ -64,44 +66,37 @@ if not st.session_state.logged_in:
         user_email = st.text_input("Email")
         submit = st.form_submit_button("Access Rx Assistant Pro")
 
-        # THIS MUST BE INDENTED INSIDE THE FORM
         if submit:
             if not user_name or not user_email:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
-                    import os
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
                     c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
                     p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
 
-                    if not p_key:
-                        st.error("🚨 'PRIVATE_KEY' is missing.")
-                    elif not c_email:
-                        st.error("🚨 'CLIENT_EMAIL' is missing.")
-                    else:
-                        creds_dict = {
-                            "type": "service_account",
-                            "project_id": p_id,
-                            "private_key": p_key.replace('\\n', '\n'),
-                            "client_email": c_email,
-                            "token_uri": "https://oauth2.googleapis.com/token",
-                        }
-                        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                        client = gspread.authorize(creds)
-                        sheet = client.open_by_key(s_id).sheet1
-                        
-                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        sheet.append_row([current_time, user_name, user_email])
+                    creds_dict = {
+                        "type": "service_account",
+                        "project_id": p_id,
+                        "private_key": p_key.replace('\\n', '\n'),
+                        "client_email": c_email,
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                    client = gspread.authorize(creds)
+                    sheet = client.open_by_key(s_id).sheet1
+                    
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sheet.append_row([current_time, user_name, user_email])
 
-                        st.session_state.logged_in = True
-                        st.success("✅ Success! Entering app...")
-                        st.rerun()
+                    st.session_state.logged_in = True
+                    st.success("✅ Success! Entering app...")
+                    st.rerun()
                 except Exception as e:
                     st.error(f"🚨 Connection Error: {e}")
-
+    
     # This stops the code here ONLY IF the user isn't logged in yet
     st.stop()
 
