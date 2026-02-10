@@ -118,11 +118,29 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
     .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
     .risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
+    
+    /* NEW TARGETED RATING STYLE */
+    .rating-text {
+        font-size: 1.15rem !important;
+        font-weight: 800 !important;
+        color: #2e7d32 !important; /* Deep Green for Light Mode */
+        display: block;
+        margin-top: 5px;
+    }
+    
+    /* Dark Mode Adjustment for Rating */
+    @media (prefers-color-scheme: dark) {
+        .rating-text {
+            color: #4df353 !important; /* Neon Green for Dark Mode */
+        }
+    }
+
     div.stButton > button { width: 100%; }
     .footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
     .footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
@@ -324,7 +342,7 @@ with tab1:
                     c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
-                        st.caption(f"Est. Rating: {insight['rating']}")
+                        st.markdown(f"<span class='rating-text'>📊 Est. Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                     with c2:
                         st.markdown("**❓ Field Questions:**")
                         for q in insight['questions']: st.write(f"✅ *{q}*")
@@ -395,7 +413,7 @@ with tab3:
                 data = IMPAIRMENT_DATA[cond]
                 with st.container():
                     st.markdown(f"**{cond}**")
-                    st.caption(f"Base Rating: {data['rating']}")
+                    st.markdown(f"<span class='rating-text'>📊 Base Rating: {data['rating']}</span>", unsafe_allow_html=True)
                     for q in data['qs']: st.write(f"🔹 *{q}*")
                     pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
                     for q in data['qs']: pdf_lines.append(f" - {q}")
