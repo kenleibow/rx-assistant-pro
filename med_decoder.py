@@ -123,7 +123,7 @@ css_style = """<style>
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
 .risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
-.rating-text { font-size: 1.05rem !important; font-weight: 850 !important; color: #E65100 !important; display: block; margin-top: 8px; margin-bottom: 4px; }
+.rating-text { font-size: 1.00rem !important; font-weight: 750 !important; color: #E65100 !important; display: block; margin-top: 8px; margin-bottom: 4px; }
 @media (prefers-color-scheme: dark) { .rating-text { color: #FF9100 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); } }
 div.stButton > button { width: 100%; }
 .footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
