@@ -119,9 +119,6 @@ def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
 # --- CSS STYLING ---
-# --- CSS STYLING ---
-# --- CSS STYLING ---
-# --- CSS STYLING ---
 st.markdown("""
 <style>
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
