@@ -105,7 +105,6 @@ if not st.session_state.logged_in:
 # ==========================================
 # (Your drug search and decoder code goes here)
 # --- CONFIGURATION (Reached only if logged in) ---
-st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
 
 # =========================================================
 #  CALLBACKS (MUST BE AT THE TOP)
