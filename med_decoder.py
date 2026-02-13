@@ -10,7 +10,7 @@ import os
 import json
 
 # THIS MUST BE THE FIRST STREAMLIT LINE
-st.set_page_config(page_title="Rx Field Assistant", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Rx Field Assistant Pro", page_icon="🛡️", layout="wide")
 
 # ==========================================
 # 🔐 SECRETS & CLOUD HANDSHAKE
@@ -176,7 +176,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Rx Field Assistant v9.4")
 
-st.title("🛡️ Life Insurance Rx Assistant")
+st.title("🛡️ Life Insurance Rx Pro Assistant")
 
 # --- PDF GENERATOR FUNCTION ---
 def create_pdf(title, items_list, analysis_text, fda_text_content=None):
