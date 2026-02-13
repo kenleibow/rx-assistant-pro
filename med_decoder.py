@@ -117,63 +117,62 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Mobile & Scroll Optimized) ---
+# --- CSS STYLING (Mobile Scroll & Table Fix) ---
 css_style = """<style>
-/* 1. IPHONE SCROLL & TOUCH FIX */
+/* 1. 📱 IPHONE VERTICAL SCROLL LOCK-IN */
 html, body, .main {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-/* Mobile Specific Settings */
+.main .block-container {
+    padding-bottom: 25rem !important; 
+    /* This ensures vertical swipes always move the page */
+    touch-action: pan-y !important; 
+}
+
+/* 2. TABLE SCROLL FIX (Prevents touch trapping) */
+div[data-testid="stTable"], div[data-testid="stDataFrame"] {
+    overflow-x: auto !important;
+    display: block !important;
+    /* Allows horizontal scroll but passes vertical scroll to the page */
+    touch-action: pan-x pan-y !important; 
+    -webkit-overflow-scrolling: touch !important;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+/* 3. MOBILE SPECIFIC BOX */
 @media (max-width: 768px) {
-    .main .block-container {
-        padding-bottom: 25rem !important; 
-    }
-    /* Restore BMI box for mobile but make it compact */
     .bmi-pointer { 
         display: block !important;
+        position: fixed !important;
         top: 10px !important; 
-        left: 5px !important;
+        left: 10px !important;
         font-size: 11px !important; 
         padding: 4px 8px !important;
-        opacity: 0.9;
+        z-index: 999999 !important;
+        pointer-events: none !important; /* CRITICAL: Finger goes "through" the box */
     }
 }
 
-/* Laptop Specific Settings */
-@media (min-width: 769px) {
-    .main .block-container {
-        padding-bottom: 5rem !important;
-    }
-}
-
-/* 2. RISK & RATING STYLES */
+/* 4. YOUR EXISTING RISK STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
 .risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
 .rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
 
-/* 3. BUTTONS & FOOTER */
+/* 5. FOOTER & BUTTONS */
 div.stButton > button { width: 100%; }
-.footer-link { text-align: center; margin-top: 40px; font-size: 14px; color: #888; }
-.footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
+.footer-link { text-align: center; margin-top: 50px; font-size: 14px; color: #888; }
 
-/* 4. FLOATING BMI BOX (Base Desktop Style) */
+/* 6. DESKTOP BMI BOX */
 .bmi-pointer { 
-    position: fixed; top: 60px; left: 20px; z-index: 9999; 
+    position: fixed; top: 60px; left: 20px; z-index: 99999; 
     background-color: #0066cc; color: white; padding: 5px 10px; 
     border-radius: 5px; font-weight: bold; font-size: 14px; 
     pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
 }
-
-/* 5. TABLE & SCROLL BEHAVIOR */
-div[data-testid="stTable"] {
-    overflow-x: auto !important;
-    display: block !important;
-}
-
-section[data-testid="stSidebar"][aria-expanded="true"] + .main .bmi-pointer { display: none; }
 </style>
 <div class="bmi-pointer">BMI Indicator</div>"""
 
