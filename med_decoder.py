@@ -492,9 +492,7 @@ with tab3:
                 key="pdf_imp_final"
             )
 
-# ==========================================
-# 🏁 FOOTER & LEGAL
-# ==========================================
+# --- FOOTER ---
 st.markdown("---")
 
 with st.expander("⚠️ Legal Disclaimer & Liability Information"):
