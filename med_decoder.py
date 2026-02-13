@@ -42,13 +42,15 @@ def get_gspread_client():
     return None
 
 # ==========================================
-# 🔐 REGISTRATION & SESSION LOCK
+# 🔐 REGISTRATION & LOGGING SECTION
 # ==========================================
 
+# 1. Initialize session state if it doesn't exist
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-if not st.session_state.logged_in:
+# 2. Gatekeeper: If not logged in, show form and STOP the rest of the app
+if st.session_state.logged_in is False:
     st.title("Rx Assistant - Registration")
     st.write("Please provide your details to access the tool.")
     
@@ -62,35 +64,41 @@ if not st.session_state.logged_in:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
+                    # Fetching Secrets
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
                     c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
                     p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
 
-                    if not s_id:
-                        st.error("Sheet ID not found in environment variables.")
-                    else:
-                        creds_dict = {
-                            "type": "service_account",
-                            "project_id": p_id,
-                            "private_key": p_key.replace('\\n', '\n') if p_key else "",
-                            "client_email": c_email,
-                            "token_uri": "https://oauth2.googleapis.com/token",
-                        }
-                        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                        client = gspread.authorize(creds)
-                        sheet = client.open_by_key(s_id).sheet1
-                        
-                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        sheet.append_row([current_time, user_name, user_email])
+                    creds_dict = {
+                        "type": "service_account",
+                        "project_id": p_id,
+                        "private_key": p_key.replace('\\n', '\n') if p_key else "",
+                        "client_email": c_email,
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                    client = gspread.authorize(creds)
+                    sheet = client.open_by_key(s_id).sheet1
+                    
+                    # Log the user
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sheet.append_row([current_time, user_name, user_email])
 
-                        # THIS LOCKS THE SESSION
-                        st.session_state.logged_in = True
-                        st.rerun()
+                    # LOCK SESSION AND REFRESH
+                    st.session_state.logged_in = True
+                    st.rerun() 
                 except Exception as e:
-                    st.error(f"🚨 Registration Error: {e}")
-    st.stop() # This is now safely inside the "not logged in" logic block
+                    st.error(f"🚨 Connection Error: {e}")
+    
+    # CRITICAL: This stop must be INSIDE the 'if not logged_in' block
+    st.stop() 
+
+# ==========================================
+# 🔍 MAIN APP STARTS BELOW THIS LINE
+# ==========================================
+# (The rest of your code continues here...)
 
 # =========================================================
 # CALLBACKS (Reachable only if logged in)
