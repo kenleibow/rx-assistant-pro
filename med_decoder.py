@@ -397,14 +397,15 @@ with tab1:
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
                         st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
-            except Exception as e: 
+      except Exception as e: 
                 st.error(f"Error: {e}")
 
+# --- TAB 2 START ---
 with tab2:
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
     with col_y: st.button("🔄 Clear List", on_click=clear_multi, key="clear_2")
-    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input", placeholder="Metformin, Lisinopril, Plavix")
+    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input_area", placeholder="Metformin, Lisinopril, Plavix")
     
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
@@ -420,12 +421,14 @@ with tab2:
                         cat = simple_category_check(ind, med)
                         cats.append(cat); valid_meds.append(med)
                         st.write(f"✅ **{med}** identified as *{cat}*")
-                except: pass
+                except: 
+                    pass
             
             combos = check_med_combinations(cats)
             if combos:
                 for c in combos: st.error(c)
-            else: st.success("No major negative combinations detected.")
+            else: 
+                st.success("No major negative combinations detected.")
             
             if valid_meds:
                 combo_text = combos if combos else ["No high-risk combinations found."]
