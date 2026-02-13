@@ -179,29 +179,52 @@ st.caption("Rx Assistant Pro v10.0")
 st.title("🛡️ Rx Assistant Pro")
 
 # --- PDF GENERATOR FUNCTION ---
-def create_pdf(title, items_list, analysis_text, fda_text_content=None):
+def create_pdf(title, items_list, analysis_text, fda_text_content=None, matrix_data=None):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     def clean(text): return text.encode('latin-1', 'replace').decode('latin-1')
+    
+    # Title
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt=clean(f"Rx Assistant - {title}"), ln=True, align='C')
+    pdf.cell(200, 10, txt=clean(f"Rx Assistant Pro - {title}"), ln=True, align='C')
     pdf.ln(10)
+    
+    # Items
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt="Items Analyzed:", ln=True, align='L')
     pdf.set_font("Arial", size=12)
     for item in items_list: pdf.cell(200, 10, txt=clean(f"- {item}"), ln=True, align='L')
     pdf.ln(5)
+    
+    # Underwriting Notes
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt="Underwriting Analysis:", ln=True, align='L')
     pdf.set_font("Arial", size=12)
     if isinstance(analysis_text, list):
         for line in analysis_text: pdf.multi_cell(0, 10, txt=clean(f"- {line}"))
     else: pdf.multi_cell(0, 10, txt=clean(analysis_text))
+    
+    # ADD THE MATRIX TO PDF
+    if matrix_data:
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, txt="Product Suitability Matrix:", ln=True, align='L')
+        pdf.set_font("Arial", 'B', 10)
+        # Table Header
+        pdf.cell(60, 8, "Category", 1); pdf.cell(40, 8, "Outlook", 1); pdf.cell(80, 8, "Note", 1); pdf.ln()
+        pdf.set_font("Arial", size=10)
+        for row in matrix_data:
+            pdf.cell(60, 8, clean(row['Category']), 1)
+            pdf.cell(40, 8, clean(row['Outlook']), 1)
+            pdf.cell(80, 8, clean(row['Note']), 1)
+            pdf.ln()
+
     if fda_text_content:
         pdf.ln(10); pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt="Official FDA Indications (Excerpt):", ln=True, align='L')
         pdf.set_font("Arial", size=10); pdf.multi_cell(0, 6, txt=clean(fda_text_content[:2000] + "..."))
+    
     return pdf.output(dest='S').encode('latin-1')
 
 # =========================================================
@@ -347,15 +370,17 @@ with tab1:
                     
                     st.success(f"**Found:** {brand}")
                     
-                    c1, c2 = st.columns([1, 2])
+                  c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<span class='rating-text'>📊 Est. Rating: {insight['rating']}</span>", unsafe_allow_html=True)
+                        # UPDATED LABEL HERE
+                        st.markdown(f"<span class='rating-text'>📊 Est. Life Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                         
-                        # --- PDF BUTTON ---
-                        report_text = [f"Risk: {insight['risk']}", f"Est. Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
-                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
-                        st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
+                        # --- UPDATED PDF BUTTON CALL ---
+                        m_data = get_product_matrix(insight['style'])
+                        report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
+                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications, matrix_data=m_data)
+                        st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", key=f"pdf_btn_{brand}")
 
                     with c2:
                         st.markdown("**❓ Field Questions:**")
@@ -445,10 +470,9 @@ with tab3:
                 
                 # Create the same 1:2 column ratio as Tab 1
                 ic1, ic2 = st.columns([1, 2])
-                
                 with ic1:
-                    # Base Rating Box
-                    st.markdown(f"<span class='rating-text'>📊 Base Rating: {data['rating']}</span>", unsafe_allow_html=True)
+                    # UPDATED: Changed to Base Life Rating
+                    st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
                     st.write("") # Spacer
 
                 with ic2:
@@ -459,14 +483,16 @@ with tab3:
                     
                     # Condensed Matrix
                     st.markdown("#### 🎯 Product Suitability Matrix")
-                    st.table(get_product_matrix(risk_lv))
+                    current_matrix = get_product_matrix(risk_lv) # Capture this for the PDF
+                    st.table(current_matrix)
 
                 # Keep the PDF lines logic behind the scenes
                 pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines)
+            # UPDATED: Now passing current_matrix to the PDF function
+            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
 
 # --- FOOTER ---
