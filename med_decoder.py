@@ -125,21 +125,8 @@ html, body, .main {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
-
-/* 📱 Mobile Specific: Huge runway for iPhone menus */
-@media (max-width: 768px) {
-    .main .block-container {
-        padding-bottom: 25rem !important; 
-    }
-    .bmi-pointer { display: none !important; }
-    section[data-testid="stSidebar"] { width: 80% !important; }
-}
-
-/* 💻 Laptop Specific: Clean, tight footer */
-@media (min-width: 769px) {
-    .main .block-container {
-        padding-bottom: 5rem !important;
-    }
+.main .block-container {
+    padding-bottom: 15rem !important; /* Forces extra space at bottom for mobile menus */
 }
 
 /* 2. RISK & RATING STYLES */
@@ -151,10 +138,10 @@ html, body, .main {
 
 /* 3. BUTTONS & FOOTER */
 div.stButton > button { width: 100%; }
-.footer-link { text-align: center; margin-top: 40px; font-size: 14px; color: #888; }
+.footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
 .footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
 
-/* 4. FLOATING BMI BOX (Desktop Only) */
+/* 4. FLOATING BMI BOX (Optimized for Mobile) */
 .bmi-pointer { 
     position: fixed; top: 60px; left: 20px; z-index: 9999; 
     background-color: #0066cc; color: white; padding: 5px 10px; 
@@ -166,6 +153,12 @@ div.stButton > button { width: 100%; }
 div[data-testid="stTable"] {
     overflow-x: auto !important;
     display: block !important;
+}
+
+/* Hide floating box on small screens if it blocks touch interaction */
+@media (max-width: 768px) {
+    .bmi-pointer { display: none; }
+    section[data-testid="stSidebar"] { width: 80% !important; }
 }
 
 section[data-testid="stSidebar"][aria-expanded="true"] + .main .bmi-pointer { display: none; }
