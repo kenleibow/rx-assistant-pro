@@ -494,10 +494,18 @@ with tab3:
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            # UPDATED: Now passing current_matrix to the PDF function
-            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
-            st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
-
+            
+            # 1. Generate the PDF bytes
+            imp_pdf_bytes = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
+            
+            # 2. Use the download button with explicit PDF settings
+            st.download_button(
+                label="📄 Download Impairment Report",
+                data=imp_pdf_bytes,
+                file_name="imp_report.pdf",
+                mime="application/pdf",  # THIS TELLS THE BROWSER IT IS A PDF
+                key="pdf_imp_final"
+            )
 # --- FOOTER ---
 st.markdown("---")
 
