@@ -118,17 +118,49 @@ def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
 # --- CSS STYLING ---
-# --- CSS STYLING ---
+# --- CSS STYLING (Mobile & Scroll Optimized) ---
 css_style = """<style>
+/* 1. 📱 IPHONE SCROLL & TOUCH FIX */
+html, body, .main {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+.main .block-container {
+    padding-bottom: 15rem !important; /* Forces extra space at bottom for mobile menus */
+}
+
+/* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
 .risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
 .rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; margin-bottom: 0px; letter-spacing: 0.3px; }
 @media (prefers-color-scheme: dark) { .rating-text { color: #FFB74D !important; text-shadow: none; } }
+
+/* 3. BUTTONS & FOOTER */
 div.stButton > button { width: 100%; }
 .footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
 .footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
-.bmi-pointer { position: fixed; top: 60px; left: 20px; z-index: 9999; background-color: #0066cc; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px; pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+
+/* 4. FLOATING BMI BOX (Optimized for Mobile) */
+.bmi-pointer { 
+    position: fixed; top: 60px; left: 20px; z-index: 9999; 
+    background-color: #0066cc; color: white; padding: 5px 10px; 
+    border-radius: 5px; font-weight: bold; font-size: 14px; 
+    pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+}
+
+/* 5. TABLE & SCROLL BEHAVIOR */
+div[data-testid="stTable"] {
+    overflow-x: auto !important;
+    display: block !important;
+}
+
+/* Hide floating box on small screens if it blocks touch interaction */
+@media (max-width: 768px) {
+    .bmi-pointer { display: none; }
+    section[data-testid="stSidebar"] { width: 80% !important; }
+}
+
 section[data-testid="stSidebar"][aria-expanded="true"] + .main .bmi-pointer { display: none; }
 </style>
 <div class="bmi-pointer">BMI Calculator</div>"""
