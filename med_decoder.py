@@ -131,15 +131,19 @@ html, body, .main {
     touch-action: pan-y !important; 
 }
 
-/* 2. TABLE SCROLL FIX (Prevents touch trapping) */
-div[data-testid="stTable"], div[data-testid="stDataFrame"] {
-    overflow-x: auto !important;
-    display: block !important;
-    /* Allows horizontal scroll but passes vertical scroll to the page */
-    touch-action: pan-x pan-y !important; 
-    -webkit-overflow-scrolling: touch !important;
-    border: 1px solid #eee;
-    border-radius: 5px;
+/* 2. LOOSEN THE BLOCK CONTAINER */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding-bottom: 30rem !important; /* Huge runway for iPhone only */
+        overflow: visible !important;
+        touch-action: auto !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .main .block-container {
+        padding-bottom: 5rem !important; /* Tight runway for Laptops */
+    }
 }
 
 /* 3. MOBILE SPECIFIC BOX */
