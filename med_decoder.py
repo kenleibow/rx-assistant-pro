@@ -13,7 +13,7 @@ import json
 st.set_page_config(page_title="Rx Assistant Pro", page_icon="🛡️", layout="wide")
 
 # ==========================================
-# 🔐 SESSION INITIALIZATION (The "Logout" Shield)
+# 🔐 SESSION INITIALIZATION
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -21,88 +21,80 @@ if "combo_results" not in st.session_state:
     st.session_state.combo_results = None
 
 # ==========================================
-# 🔐 SECRETS & CLOUD HANDSHAKE
-# ==========================================
-def get_gspread_client():
-    try:
-        gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
-        if gcp_json:
-            creds_dict = json.loads(gcp_json)
-            if "private_key" in creds_dict:
-                creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
-            scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            return gspread.authorize(creds)
-    except:
-        pass
-    return None
-
-# ==========================================
-# 🔐 REGISTRATION & SESSION LOCK
+# 🔐 REGISTRATION GATEKEEPER (The "Hard Wall")
 # ==========================================
 if not st.session_state.logged_in:
     st.title("🛡️ Rx Assistant Pro - Access")
-    with st.form("registration_gate"):
-        user_name = st.text_input("Full Name")
-        user_email = st.text_input("Email")
+    st.info("Please register to access the Field Underwriting Tool.")
+    
+    with st.form("gate_form"):
+        u_name = st.text_input("Full Name")
+        u_email = st.text_input("Email")
         if st.form_submit_button("Access Rx Assistant Pro"):
-            if user_name and user_email:
+            if u_name and u_email:
                 try:
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
-                    c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
-                    p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
-                    
                     creds_dict = {
                         "type": "service_account",
-                        "project_id": p_id,
-                        "private_key": p_key.replace('\\n', '\n') if p_key else "",
-                        "client_email": c_email,
+                        "project_id": os.environ.get("PROJECT_ID"),
+                        "private_key": p_key.replace('\\n', '\n'),
+                        "client_email": os.environ.get("CLIENT_EMAIL"),
                         "token_uri": "https://oauth2.googleapis.com/token",
                     }
                     client = gspread.authorize(Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]))
                     sheet = client.open_by_key(s_id).sheet1
-                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_name, user_email])
+                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), u_name, u_email])
                     
                     st.session_state.logged_in = True
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Registration Error: {e}")
+                    st.error(f"Login Error: {e}")
             else:
-                st.warning("Please enter your name and email.")
-    st.stop() 
+                st.warning("Name and Email are required.")
+    
+    # IF NOT LOGGED IN, STOP HERE. DO NOT LOAD SIDEBAR OR TABS.
+    st.stop()
 
 # ==========================================
-# 🔍 MAIN APP STARTS HERE (Reachable only if logged_in)
+# 🛡️ PROTECTED ZONE (Only reached if logged_in is True)
 # ==========================================
 
-# CALLBACKS
-def fix_spelling_callback():
-    if "suggestion" in st.session_state:
-        st.session_state.single_input = st.session_state.suggestion
+# 1. SIDEBAR BMI (Now safely inside the session)
+with st.sidebar:
+    st.header("⚖️ BMI Calculator")
+    # Added keys to preserve values during tab switches
+    f_val = st.number_input("Height (Feet)", 4, 8, 5, key="bmi_feet_input")
+    i_val = st.number_input("Height (Inches)", 0, 11, 9, key="bmi_inches_input")
+    w_val = st.number_input("Weight (lbs)", 80, 500, 140, key="bmi_weight_input")
+    
+    total_inches = (f_val * 12) + i_val
+    bmi = 0.0
+    bmi_category = "Normal"
+    if total_inches > 0:
+        bmi = round((w_val / (total_inches ** 2)) * 703, 1)
+        if bmi < 18.5: bmi_category = "Underweight"
+        elif bmi < 25: bmi_category = "Normal"
+        elif bmi < 30: bmi_category = "Overweight"
+        else: bmi_category = "Obese"
+    
+    st.markdown(f"### BMI: **{bmi}**")
+    st.markdown(f"Category: **{bmi_category}**")
+    st.markdown("---")
+    st.caption("Rx Assistant Pro v10.0")
+
+# 2. CALLBACKS & CSS
 def clear_single(): st.session_state.single_input = ""
 def clear_multi(): 
     st.session_state.combo_results = None
     st.session_state.multi_input_area = ""
 
-# SIDEBAR BMI (Guarded inside logged_in state)
-with st.sidebar:
-    st.header("⚖️ BMI Calculator")
-    feet = st.number_input("Height (Feet)", 4, 8, 5, key="sidebar_ft")
-    inches = st.number_input("Height (Inches)", 0, 11, 9, key="sidebar_in")
-    weight = st.number_input("Weight (lbs)", 80, 500, 140, key="sidebar_lb")
-    total_inches = (feet * 12) + inches
-    bmi = 0.0
-    bmi_category = "Normal"
-    if total_inches > 0:
-        bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        if bmi < 18.5: bmi_category = "Underweight"
-        elif bmi < 25: bmi_category = "Normal"
-        elif bmi < 30: bmi_category = "Overweight"
-        else: bmi_category = "Obese"
-    st.write(f"**BMI: {bmi} ({bmi_category})**")
-    st.markdown("---")
-    st.caption("Rx Assistant Pro v10.0")
+st.markdown("""<style>
+.risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
+.risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
+.risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
+.rating-text { font-size: 0.95rem; font-weight: 600; color: #E65100; }
+</style>""", unsafe_allow_html=True)
 
 st.title("🛡️ Rx Assistant Pro")
 
