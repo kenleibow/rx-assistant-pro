@@ -456,7 +456,7 @@ with tab3:
         if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
         
         if conditions:
-            current_matrix = None # Initialize
+            current_matrix = None 
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
                 r_text = data['rating'].lower()
@@ -484,10 +484,29 @@ with tab3:
             
             st.divider()
             imp_pdf_bytes = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
-            st.download_button(label="📄 Download Impairment Report", data=imp_pdf_bytes, file_name="imp_report.pdf", mime="application/pdf", key="pdf_imp_final")
+            st.download_button(
+                label="📄 Download Impairment Report", 
+                data=imp_pdf_bytes, 
+                file_name="imp_report.pdf", 
+                mime="application/pdf", 
+                key="pdf_imp_final"
             )
+
 # --- FOOTER ---
 st.markdown("---")
+
+with st.expander("⚠️ Legal Disclaimer & Liability Information"):
+    st.markdown("""
+    **1. Educational Use Only:** This tool is designed solely for informational and educational purposes to assist insurance professionals. It is not a medical device and should not be used for medical diagnosis.
+    
+    **2. No Binding Offer:** The risk class estimates (e.g., "Standard", "Table 2") are generalized approximations based on industry averages. They do not constitute a binding offer, quote, or guarantee of coverage from any specific insurance carrier.
+    
+    **3. Carrier Specifics:** Every insurance carrier has unique underwriting guidelines, knock-out questions, and credit programs. Users must always consult the official underwriting manuals and guides of the specific carrier they are writing business with.
+    
+    **4. Liability Waiver:** InsurTech Express and the creators of this tool accept no liability for errors, omissions, inaccuracies, or financial losses resulting from the use of this software. The user assumes all responsibility for verifying information with the appropriate carrier.
+    """)
+
+st.markdown("<div class='footer-link'>Powered by <a href='https://www.insurtechexpress.com' target='_blank'>InsurTech Express</a></div>", unsafe_allow_html=True)
 
 # RESTORED DISCLAIMER
 with st.expander("⚠️ Legal Disclaimer & Liability Information"):
