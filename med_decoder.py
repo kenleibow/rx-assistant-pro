@@ -13,42 +13,34 @@ import json
 st.set_page_config(page_title="Rx Assistant Pro", page_icon="🛡️", layout="wide")
 
 # ==========================================
+# 🔐 SESSION INITIALIZATION (The "Logout" Shield)
+# ==========================================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "combo_results" not in st.session_state:
+    st.session_state.combo_results = None
+
+# ==========================================
 # 🔐 SECRETS & CLOUD HANDSHAKE
 # ==========================================
-
 def get_gspread_client():
-    # 1. Try to build the key from the big Railway JSON variable
     try:
         gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
         if gcp_json:
             creds_dict = json.loads(gcp_json)
             if "private_key" in creds_dict:
                 creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
-            
             scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
             return gspread.authorize(creds)
-    except Exception as e:
-        pass # Silent fail to allow fallback
-
-    # 2. Safety Fallback for local testing/Streamlit Cloud
-    try:
-        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
-            return gspread.authorize(creds)
     except:
         pass
-
     return None
 
 # ==========================================
 # 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-# THE GUARD: Everything inside this block only happens IF you are NOT logged in
-if st.session_state.logged_in is False:
+if not st.session_state.logged_in:
     st.title("🛡️ Rx Assistant Pro - Access")
     with st.form("registration_gate"):
         user_name = st.text_input("Full Name")
@@ -56,7 +48,6 @@ if st.session_state.logged_in is False:
         if st.form_submit_button("Access Rx Assistant Pro"):
             if user_name and user_email:
                 try:
-                    # SECRETS HANDSHAKE
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
                     c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
                     p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
@@ -69,101 +60,49 @@ if st.session_state.logged_in is False:
                         "client_email": c_email,
                         "token_uri": "https://oauth2.googleapis.com/token",
                     }
-                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
+                    client = gspread.authorize(Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]))
                     sheet = client.open_by_key(s_id).sheet1
+                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_name, user_email])
                     
-                    # LOG TO GOOGLE
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
-                    
-                    # LOCK THE DOOR
                     st.session_state.logged_in = True
                     st.rerun()
                 except Exception as e:
                     st.error(f"Registration Error: {e}")
             else:
                 st.warning("Please enter your name and email.")
-    
-    # CRITICAL: This stop MUST be inside the 'if logged_in is False' block
-    # This prevents the app from running the BMI/Impairment logic until authorized
-    st.stop()
+    st.stop() 
 
 # ==========================================
-# 🔍 MAIN APP STARTS HERE
+# 🔍 MAIN APP STARTS HERE (Reachable only if logged_in)
 # ==========================================
 
-# =========================================================
-# CALLBACKS (Reachable only if logged in)
-# =========================================================
+# CALLBACKS
 def fix_spelling_callback():
     if "suggestion" in st.session_state:
         st.session_state.single_input = st.session_state.suggestion
-
 def clear_single(): st.session_state.single_input = ""
-def clear_multi(): st.session_state.multi_input = ""
+def clear_multi(): 
+    st.session_state.combo_results = None
+    st.session_state.multi_input_area = ""
 
-# --- CSS STYLING ---
-# --- CSS STYLING ---
-# --- CSS STYLING ---
-css_style = """<style>
-.risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
-.risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
-.risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
-.rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; margin-bottom: 0px; letter-spacing: 0.3px; }
-@media (prefers-color-scheme: dark) { .rating-text { color: #FFB74D !important; text-shadow: none; } }
-div.stButton > button { width: 100%; }
-.footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
-.footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
-.bmi-pointer { position: fixed; top: 60px; left: 20px; z-index: 9999; background-color: #0066cc; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px; pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
-section[data-testid="stSidebar"][aria-expanded="true"] + .main .bmi-pointer { display: none; }
-</style>
-<div class="bmi-pointer">BMI Calculator</div>"""
-
-st.markdown(css_style, unsafe_allow_html=True)
-
-# =========================================================
-#  DATA: COMMON DRUG LIST
-# =========================================================
-COMMON_DRUGS_LIST = [
-    "Metformin", "Lisinopril", "Atorvastatin", "Levothyroxine", "Amlodipine", 
-    "Metoprolol", "Omeprazole", "Losartan", "Gabapentin", "Hydrochlorothiazide", 
-    "Sertraline", "Simvastatin", "Montelukast", "Escitalopram", "Furosemide", 
-    "Pantoprazole", "Trazodone", "Fluticasone", "Tramadol", "Duloxetine", 
-    "Prednisone", "Tamsulosin", "Rosuvastatin", "Bupropion", "Meloxicam", 
-    "Aspirin", "Clopidogrel", "Plavix", "Glipizide", "Benicar", "Januvia", 
-    "Humira", "Enbrel", "Eliquis", "Xarelto", "Pradaxa", "Entresto", 
-    "Farxiga", "Jardiance", "Ozempic", "Wegovy", "Mounjaro", "Trulicity", 
-    "Synthroid", "Crestor", "Lipitor", "Nexium", "Advair", "Symbicort", 
-    "Ventolin", "ProAir", "Spiriva", "Lyrica", "Cymbalta", "Effexor", 
-    "Lexapro", "Zoloft", "Prozac", "Wellbutrin", "Abilify", "Seroquel", 
-    "Xanax", "Klonopin", "Valium", "Ativan", "Ambien", "Lunesta", 
-    "Viagra", "Cialis", "Levitra", "Allopurinol", "Colchicine", "Warfarin", 
-    "Coumadin", "Digoxin", "Amiodarone", "Flecanide", "Sotalol", "Nitroglycerin",
-    "Ranolazine", "Imdur", "Bisoprolol", "Carvedilol", "Labetalol"
-]
-
-# =========================================================
-#  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
-# =========================================================
+# SIDEBAR BMI (Guarded inside logged_in state)
 with st.sidebar:
     st.header("⚖️ BMI Calculator")
-    feet = st.number_input("Height (Feet)", 4, 8, 5)
-    inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 140)
+    feet = st.number_input("Height (Feet)", 4, 8, 5, key="sidebar_ft")
+    inches = st.number_input("Height (Inches)", 0, 11, 9, key="sidebar_in")
+    weight = st.number_input("Weight (lbs)", 80, 500, 140, key="sidebar_lb")
     total_inches = (feet * 12) + inches
     bmi = 0.0
     bmi_category = "Normal"
     if total_inches > 0:
         bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
-        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
-        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
-        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
+        if bmi < 18.5: bmi_category = "Underweight"
+        elif bmi < 25: bmi_category = "Normal"
+        elif bmi < 30: bmi_category = "Overweight"
+        else: bmi_category = "Obese"
+    st.write(f"**BMI: {bmi} ({bmi_category})**")
     st.markdown("---")
-    # Change Line 175 to:
-st.caption("Rx Assistant Pro v10.0")
+    st.caption("Rx Assistant Pro v10.0")
 
 st.title("🛡️ Rx Assistant Pro")
 
