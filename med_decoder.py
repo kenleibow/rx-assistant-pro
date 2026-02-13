@@ -500,7 +500,15 @@ with tab3:
                     st.write("") # Spacer
 
                 with ic2:
-                   # Condensed Matrix
+                    # 1. DISPLAY THE QUESTIONS (This was the missing piece)
+                    st.markdown("#### ❓ Field Questions:")
+                    if 'qs' in data:
+                        for q in data['qs']: 
+                            st.write(f"✅ *{q}*")
+                    
+                    st.write("") # Small spacer
+
+                    # 2. DISPLAY THE MATRIX
                     st.markdown("#### 🎯 Product Suitability Matrix")
                     st.caption("💡 *Ratings are estimates based on clinical control and co-morbidities.*")
                     st.table(get_product_matrix(risk_lv))
