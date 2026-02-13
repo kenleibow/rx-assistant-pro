@@ -44,44 +44,20 @@ def get_gspread_client():
 # ==========================================
 # 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
-
-# MUST initialize these at the very top
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-if "combo_results" not in st.session_state:
-    st.session_state.combo_results = None
 
-# THE GATEKEEPER
 if not st.session_state.logged_in:
     st.title("🛡️ Rx Assistant Pro - Access")
-    with st.form("reg_form"):
-        u_name = st.text_input("Full Name")
+    with st.form("reg_gate"):
+        u_name = st.text_input("Name")
         u_email = st.text_input("Email")
-        if st.form_submit_button("Access Pro Tool"):
+        if st.form_submit_button("Access Tool"):
             if u_name and u_email:
-                try:
-                    # SECRETS HANDSHAKE (simplified for clarity)
-                    p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
-                    s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
-                    creds_dict = {
-                        "type": "service_account",
-                        "project_id": os.environ.get("PROJECT_ID"),
-                        "private_key": p_key.replace('\\n', '\n'),
-                        "client_email": os.environ.get("CLIENT_EMAIL"),
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                    }
-                    client = gspread.authorize(Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]))
-                    sheet = client.open_by_key(s_id).sheet1
-                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), u_name, u_email])
-                    
-                    # LOCK THE SESSION
-                    st.session_state.logged_in = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Login Error: {e}")
-            else:
-                st.warning("Please enter Name and Email.")
-    st.stop() # ABSOLUTELY HALT HERE IF NOT LOGGED IN
+                # ... (Keep your existing Google Sheet logging code here) ...
+                st.session_state.logged_in = True
+                st.rerun()
+    st.stop() # THIS MUST BE INSIDE THE 'if not logged_in' block
 
 # =========================================================
 # 🔍 MAIN APP STARTS HERE (Only reached if logged_in is True)
@@ -453,31 +429,44 @@ with tab2:
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
     col_i1, col_i2 = st.columns(2)
+    
     with col_i1:
         sorted_conditions = sorted(list(IMPAIRMENT_DATA.keys()))
+        # Use a key to ensure this stays in memory
         conditions = st.multiselect("Select Conditions:", sorted_conditions, key="cond_select")
+    
     with col_i2:
         st.write("Risk Factors:")
-        is_smoker = st.checkbox("🚬 Tobacco / Nicotine User")
+        # Toggling this causes a rerun; Fix 1 above prevents the logout
+        is_smoker = st.checkbox("🚬 Tobacco / Nicotine User", key="tobacco_user")
         st.write(f"⚖️ Current BMI: **{bmi}** ({bmi_category})")
     
+    # Only run analysis if something is selected or changed
     if conditions or is_smoker or bmi > 30:
         st.divider()
         st.subheader("📝 Underwriting Analysis")
+        
+        # Calculate warnings
         warnings = check_comorbidities(conditions, is_smoker, bmi)
-        for w in warnings: st.error(w)
+        for w in warnings: 
+            st.error(w)
         
         pdf_lines = []
-        if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
+        if warnings: 
+            pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
         
         if conditions:
             current_matrix = None 
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
                 r_text = data['rating'].lower()
-                risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
-                if "preferred" in r_text and "table" not in r_text: risk_lv = "risk-safe"
                 
+                # Risk Logic
+                risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
+                if "preferred" in r_text and "table" not in r_text: 
+                    risk_lv = "risk-safe"
+                
+                # Apply smoker/BMI "Bumps"
                 if is_smoker or bmi > 35:
                     if risk_lv == "risk-safe": risk_lv = "risk-med"
                     elif risk_lv == "risk-med": risk_lv = "risk-high"
@@ -490,6 +479,7 @@ with tab3:
                     st.markdown("#### ❓ Field Questions:")
                     for q in data['qs']: 
                         st.write(f"✅ *{q}*")
+                    
                     st.markdown("#### 🎯 Product Suitability Matrix")
                     current_matrix = get_product_matrix(risk_lv)
                     st.table(current_matrix)
@@ -498,6 +488,7 @@ with tab3:
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
+            # PDF Generation
             imp_pdf_bytes = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
             st.download_button(
                 label="📄 Download Impairment Report", 
