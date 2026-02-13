@@ -9,11 +9,22 @@ import difflib
 import os
 import json
 
+import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+import pandas as pd
+from datetime import datetime
+import requests
+from fpdf import FPDF
+import difflib
+import os
+import json
+
 # THIS MUST BE THE FIRST STREAMLIT LINE
 st.set_page_config(page_title="Rx Assistant Pro", page_icon="🛡️", layout="wide")
 
 # ==========================================
-# 🔐 SESSION INITIALIZATION (The "Logout" Shield)
+# 🔐 SESSION INITIALIZATION
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -72,18 +83,18 @@ if not st.session_state.logged_in:
                     st.error(f"Registration Error: {e}")
             else:
                 st.warning("Please enter your name and email.")
-    st.stop() # App stops here if not logged in
+    st.stop() 
 
 # ==========================================
-# 🛡️ PROTECTED ZONE (Only reached if logged_in)
+# 🛡️ PROTECTED ZONE (Reached only if logged_in)
 # ==========================================
 
 # 1. SIDEBAR BMI
 with st.sidebar:
     st.header("⚖️ BMI Calculator")
-    f_val = st.number_input("Height (Feet)", 4, 8, 5, key="bmi_feet_input")
-    i_val = st.number_input("Height (Inches)", 0, 11, 9, key="bmi_inches_input")
-    w_val = st.number_input("Weight (lbs)", 80, 500, 140, key="bmi_weight_input")
+    f_val = st.number_input("Height (Feet)", 4, 8, 5, key="bmi_ft")
+    i_val = st.number_input("Height (Inches)", 0, 11, 9, key="bmi_in")
+    w_val = st.number_input("Weight (lbs)", 80, 500, 140, key="bmi_lb")
     
     total_inches = (f_val * 12) + i_val
     bmi = 0.0
@@ -100,42 +111,17 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Rx Assistant Pro v10.0")
 
-# =========================================================
-#  CALLBACKS (MUST BE AT THE TOP)
-# =========================================================
+# 2. CALLBACKS
 def fix_spelling_callback():
     if "suggestion" in st.session_state:
         st.session_state.single_input = st.session_state.suggestion
 
 def clear_single(): st.session_state.single_input = ""
 def clear_multi(): 
-    st.session_state.multi_input_area = ""
     st.session_state.combo_results = None
+    st.session_state.multi_input_area = ""
 
-# =========================================================
-#  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
-# =========================================================
-with st.sidebar:
-    st.header("⚖️ BMI Calculator")
-    # Added keys to preserve values and prevent session resets/logouts
-    feet = st.number_input("Height (Feet)", 4, 8, 5, key="sidebar_ft_val")
-    inches = st.number_input("Height (Inches)", 0, 11, 9, key="sidebar_in_val")
-    weight = st.number_input("Weight (lbs)", 80, 500, 140, key="sidebar_wt_val")
-    
-    total_inches = (feet * 12) + inches
-    bmi = 0.0
-    bmi_category = "Normal"
-    if total_inches > 0:
-        bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
-        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
-        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
-        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
-    st.markdown("---")
-    st.caption("Rx Assistant Pro v10.0")
-
-# --- CSS STYLING (The Bulletproof Version) ---
-# We define the CSS separately to avoid bracket conflicts
+# 3. CSS & FLOATING BOX
 style_tags = """
 <style>
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
@@ -144,67 +130,40 @@ style_tags = """
 .rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
 div.stButton > button { width: 100%; }
 .footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
-.footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
-
-/* THE BLUE BMI INDICATOR */
 .bmi-pointer { 
-    position: fixed; 
-    top: 80px; 
-    left: 20px; 
-    z-index: 9999; 
-    background-color: #0066cc; 
-    color: white; 
-    padding: 10px 15px; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    font-size: 16px; 
-    box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-    border: 1px solid white;
+    position: fixed; top: 80px; left: 20px; z-index: 9999; 
+    background-color: #0066cc; color: white; padding: 10px 15px; 
+    border-radius: 8px; font-weight: bold; font-size: 16px; 
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border: 1px solid white;
 }
 </style>
 """
-
-# Inject the CSS
 st.markdown(style_tags, unsafe_allow_html=True)
-
-# Inject the Floating Blue Box (Separate from the CSS to prevent KeyErrors)
 st.markdown(f'<div class="bmi-pointer">⚖️ BMI: {bmi}</div>', unsafe_allow_html=True)
 
-# --- 2. THE RESTORED TAB 1 (Fixes Fuzzy Match) ---
-with tab1:
-    col_a, col_b = st.columns([4, 1])
-    with col_a: st.markdown("### 🔍 Search by Medication Name")
-    with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
-    
-    # We use 'single_input' as the key to link with the spelling callback
-    single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
-    
-    if single_drug:
-        with st.spinner("Accessing FDA Database..."):
-            try:
-                url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
-                r = requests.get(url)
-                if r.status_code == 200:
-                    data = r.json()['results'][0]
-                    brand = data['openfda'].get('brand_name', [single_drug])[0]
-                    indications = data.get('indications_and_usage', ["No text found"])[0]
-                    insight = analyze_single_med(indications, brand)
-                    
-                    st.success(f"**Found:** {brand}")
-                    # ... (rest of your display columns C1, C2)
-                else:
-                    # FUZZY MATCH LOGIC STARTS HERE
-                    matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
-                    st.error(f"❌ '{single_drug}' not found.")
-                    if matches:
-                        suggested_word = matches[0]
-                        st.info(f"💡 Did you mean: **{suggested_word}**?")
-                        st.session_state.suggestion = suggested_word
-                        # This button triggers the fix_spelling_callback
-                        st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check_btn")
-            except Exception as e:
-                st.error(f"Search Error: {e}")
 st.title("🛡️ Rx Assistant Pro")
+
+# 4. DEFINE TABS
+tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
+
+# 5. DATA: COMMON DRUG LIST
+COMMON_DRUGS_LIST = [
+    "Metformin", "Lisinopril", "Atorvastatin", "Levothyroxine", "Amlodipine", 
+    "Metoprolol", "Omeprazole", "Losartan", "Gabapentin", "Hydrochlorothiazide", 
+    "Sertraline", "Simvastatin", "Montelukast", "Escitalopram", "Furosemide", 
+    "Pantoprazole", "Trazodone", "Fluticasone", "Tramadol", "Duloxetine", 
+    "Prednisone", "Tamsulosin", "Rosuvastatin", "Bupropion", "Meloxicam", 
+    "Aspirin", "Clopidogrel", "Plavix", "Glipizide", "Benicar", "Januvia", 
+    "Humira", "Enbrel", "Eliquis", "Xarelto", "Pradaxa", "Entresto", 
+    "Farxiga", "Jardiance", "Ozempic", "Wegovy", "Mounjaro", "Trulicity", 
+    "Synthroid", "Crestor", "Lipitor", "Nexium", "Advair", "Symbicort", 
+    "Ventolin", "ProAir", "Spiriva", "Lyrica", "Cymbalta", "Effexor", 
+    "Lexapro", "Zoloft", "Prozac", "Wellbutrin", "Abilify", "Seroquel", 
+    "Xanax", "Klonopin", "Ativan", "Ambien", "Lunesta", 
+    "Viagra", "Cialis", "Levitra", "Allopurinol", "Colchicine", "Warfarin", 
+    "Coumadin", "Digoxin", "Amiodarone", "Flecanide", "Sotalol", "Nitroglycerin",
+    "Ranolazine", "Imdur", "Bisoprolol", "Carvedilol", "Labetalol"
+]
 
 # (The rest of your code - create_pdf, analyze_single_med, etc - remains as is)
 
