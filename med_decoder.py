@@ -297,9 +297,33 @@ def check_comorbidities(selected_conditions, is_smoker, current_bmi):
         if "Sleep Apnea" in selected_conditions: warnings.append("BUILD RISK: Sleep Apnea with BMI > 35 requires documented CPAP compliance for best rates.")
     if "Diabetes Type 2" in selected_conditions and "Heart Attack (History of)" in selected_conditions: warnings.append("COMORBIDITY ALERT: Diabetes + Heart History is treated very strictly. Expect Table 4 minimum.")
     return warnings
-
+def get_product_matrix(risk_level):
+    if risk_level == "risk-high":
+        return [
+            {"Category": "Term (10-30yr)", "Outlook": "❌ Poor", "Note": "Likely Decline"},
+            {"Category": "Perm (IUL/UL/WL)", "Outlook": "⚠️ Fair", "Note": "Table 4 - 8"},
+            {"Category": "Final Expense", "Outlook": "✅ Good", "Note": "Standard / Level"},
+            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Auto-Decline"},
+            {"Category": "Long-Term Care", "Outlook": "❌ Poor", "Note": "Decline"}
+        ]
+    elif risk_level == "risk-med":
+        return [
+            {"Category": "Term (10-30yr)", "Outlook": "⚠️ Fair", "Note": "Std to Table 2"},
+            {"Category": "Perm (IUL/UL/WL)", "Outlook": "✅ Good", "Note": "Standard Likely"},
+            {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred"},
+            {"Category": "Disability (DI)", "Outlook": "⚠️ Fair", "Note": "Table 2 / Excl."},
+            {"Category": "Long-Term Care", "Outlook": "⚠️ Fair", "Note": "Rated / Wait"}
+        ]
+    else: # risk-safe
+        return [
+            {"Category": "Term (10-30yr)", "Outlook": "💎 Best", "Note": "Preferred / Std"},
+            {"Category": "Perm (IUL/UL/WL)", "Outlook": "💎 Best", "Note": "Preferred / Std"},
+            {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred"},
+            {"Category": "Disability (DI)", "Outlook": "✅ Good", "Note": "Standard"},
+            {"Category": "Long-Term Care", "Outlook": "✅ Good", "Note": "Standard"}
+        ]
 # =========================================================
-# APP TABS
+# APP TABS (Rx Assistant Pro Edition)
 # =========================================================
 tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
 
@@ -308,6 +332,7 @@ with tab1:
     with col_a: st.markdown("### 🔍 Search by Medication Name")
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
+    
     if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
@@ -318,20 +343,27 @@ with tab1:
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
                     indications = data.get('indications_and_usage', ["No text found"])[0]
                     insight = analyze_single_med(indications, single_drug)
+                    
                     st.success(f"**Found:** {brand}")
+                    
                     c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
                         st.markdown(f"<span class='rating-text'>📊 Est. Rating: {insight['rating']}</span>", unsafe_allow_html=True)
+                        
+                        # --- PDF BUTTON ---
+                        report_text = [f"Risk: {insight['risk']}", f"Est. Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
+                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
+                        st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
+
                     with c2:
                         st.markdown("**❓ Field Questions:**")
                         for q in insight['questions']: st.write(f"✅ *{q}*")
-                    with st.expander("Show FDA Official Text"): st.write(indications)
-                    
-                    # --- PDF BUTTON (RECOVERED) ---
-                    report_text = [f"Risk: {insight['risk']}", f"Est. Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
-                    pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
-                    st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
+                        
+                        st.markdown("#### 🎯 Product Suitability Matrix")
+                        st.table(get_product_matrix(insight['style']))
+                        
+                        with st.expander("Show FDA Official Text"): st.write(indications)
                 else:
                     matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
                     st.error(f"❌ '{single_drug}' not found.")
@@ -347,6 +379,7 @@ with tab2:
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
     with col_y: st.button("🔄 Clear List", on_click=clear_multi, key="clear_2")
     multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input", placeholder="Metformin, Lisinopril, Plavix")
+    
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
             meds = [m.strip() for m in multi_input.split(',')]
@@ -362,10 +395,12 @@ with tab2:
                         cats.append(cat); valid_meds.append(med)
                         st.write(f"✅ **{med}** identified as *{cat}*")
                 except: pass
+            
             combos = check_med_combinations(cats)
             if combos:
                 for c in combos: st.error(c)
             else: st.success("No major negative combinations detected.")
+            
             if valid_meds:
                 combo_text = combos if combos else ["No high-risk combinations found."]
                 pdf_bytes = create_pdf("Multi-Med Analysis", valid_meds, combo_text)
@@ -381,22 +416,36 @@ with tab3:
         st.write("Risk Factors:")
         is_smoker = st.checkbox("🚬 Tobacco / Nicotine User")
         st.write(f"⚖️ Current BMI: **{bmi}** ({bmi_category})")
+    
     if conditions or is_smoker or bmi > 30:
         st.divider()
         st.subheader("📝 Underwriting Analysis")
         warnings = check_comorbidities(conditions, is_smoker, bmi)
         for w in warnings: st.error(w)
+        
         pdf_lines = []
         if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
+        
         if conditions:
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
+                
+                # Determine risk level for the matrix logic
+                r_text = data['rating'].lower()
+                risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
+                if "preferred" in r_text and "table" not in r_text: risk_lv = "risk-safe"
+
                 with st.container():
-                    st.markdown(f"**{cond}**")
+                    st.markdown(f"### {cond}")
                     st.markdown(f"<span class='rating-text'>📊 Base Rating: {data['rating']}</span>", unsafe_allow_html=True)
+                    
+                    st.markdown("**Underwriting Suitability by Product Type:**")
+                    st.table(get_product_matrix(risk_lv))
+
                     for q in data['qs']: st.write(f"🔹 *{q}*")
                     pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
                     for q in data['qs']: pdf_lines.append(f" - {q}")
+            
             st.markdown("---")
             imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
