@@ -352,7 +352,7 @@ with tab1:
                         st.markdown(f"<span class='rating-text'>📊 Est. Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                         
                         # --- PDF BUTTON ---
-                        report_text = [f"Risk: {insight['risk']}", f"Est. Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
+                        report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                         pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
                         st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
 
@@ -446,7 +446,7 @@ with tab3:
                 
                 with ic1:
                     # Base Rating Box
-                    st.markdown(f"<span class='rating-text'>📊 Base Rating: {data['rating']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
                     st.write("") # Spacer
 
                 with ic2:
