@@ -45,21 +45,19 @@ def get_gspread_client():
 # 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
 
-# 1. Initialize session state if it doesn't exist
+# Initialize ALL needed state variables at the start
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+if "combo_results" not in st.session_state:
+    st.session_state.combo_results = None
 
-# 2. THE GUARD: If they are NOT logged in, show the form and STOP everything else
+# THE GUARD: This block MUST remain True to see the app
 if not st.session_state.logged_in:
     st.title("🛡️ Rx Assistant Pro - Access")
-    st.info("Please register to access the Field Underwriting Tool.")
-    
     with st.form("registration_gate"):
         user_name = st.text_input("Full Name")
         user_email = st.text_input("Email Address")
-        btn_access = st.form_submit_button("Access Rx Assistant Pro")
-        
-        if btn_access:
+        if st.form_submit_button("Access Rx Assistant Pro"):
             if user_name and user_email:
                 try:
                     # SECRETS HANDSHAKE
@@ -69,31 +67,24 @@ if not st.session_state.logged_in:
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
                     
                     creds_dict = {
-                        "type": "service_account",
-                        "project_id": p_id,
+                        "type": "service_account", "project_id": p_id,
                         "private_key": p_key.replace('\\n', '\n') if p_key else "",
-                        "client_email": c_email,
-                        "token_uri": "https://oauth2.googleapis.com/token",
+                        "client_email": c_email, "token_uri": "https://oauth2.googleapis.com/token",
                     }
                     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
                     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
                     client = gspread.authorize(creds)
                     sheet = client.open_by_key(s_id).sheet1
+                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_name, user_email])
                     
-                    # LOG TO GOOGLE
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
-                    
-                    # THE LOCK: Set this to True before rerunning
+                    # LOCK THE DOOR
                     st.session_state.logged_in = True
                     st.rerun()
                 except Exception as e:
                     st.error(f"Registration Error: {e}")
             else:
                 st.warning("Both Name and Email are required.")
-    
-    # CRITICAL: This stop must be the LAST line of the 'if not logged_in' block
-    st.stop()
+    st.stop() # App stops here if not logged in
 
 # =========================================================
 # 🔍 MAIN APP STARTS HERE (Only reached if logged_in is True)
@@ -396,46 +387,25 @@ with tab1:
                 st.error(f"Error: {e}")
 
 with tab2:
-    col_x, col_y = st.columns([4, 1])
-    with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
-    with col_y: st.button("🔄 Clear List", on_click=clear_multi, key="clear_2")
-    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input_area", placeholder="Metformin, Lisinopril, Plavix")
+    # ... (header and text area code) ...
     
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
-            meds = [m.strip() for m in multi_input.split(',')]
-            cats = []; valid_meds = []
-            for med in meds:
-                if len(med) < 3: continue
-                try:
-                    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
-                    r = requests.get(url)
-                    if r.status_code == 200:
-                        ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
-                        cat = simple_category_check(ind, med)
-                        cats.append(cat); valid_meds.append(med)
-                        st.write(f"✅ **{med}** identified as *{cat}*")
-                except: 
-                    pass
-            
+            # ... (your existing logic to find cats and valid_meds) ...
             combos = check_med_combinations(cats)
-            if combos:
-                for c in combos: st.error(c)
-            else: 
-                st.success("No major negative combinations detected.")
+            # SAVE TO SESSION STATE
+            st.session_state.combo_results = {"combos": combos, "meds": valid_meds}
+
+    # DISPLAY FROM SESSION STATE (This keeps it visible after download)
+    if st.session_state.combo_results:
+        res = st.session_state.combo_results
+        if res["combos"]:
+            for c in res["combos"]: st.error(c)
+        else:
+            st.success("No major negative combinations detected.")
             
-            if valid_meds:
-                combo_text = combos if combos else ["No high-risk combinations found."]
-                pdf_bytes = create_pdf("Multi-Med Analysis", valid_meds, combo_text)
-                
-                # REPLACEMENT CODE WITH PDF FIX
-                st.download_button(
-                    label="📄 Download Combo Report", 
-                    data=pdf_bytes, 
-                    file_name="combo_report.pdf", 
-                    mime="application/pdf", 
-                    key="pdf_multi_final"
-                )
+        pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], res["combos"] if res["combos"] else ["No risks found."])
+        st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", mime="application/pdf", key="pdf_multi_final")
 
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
