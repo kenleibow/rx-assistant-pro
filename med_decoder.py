@@ -400,10 +400,6 @@ with tab1:
             except Exception as e: 
                 st.error(f"Error: {e}")
 
-# This line ensures we are officially outside Tab 1 before Tab 2 starts
-with tab2:
-    # ... (rest of your multi-med code)
-
 with tab2:
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
