@@ -47,21 +47,52 @@ def get_gspread_client():
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-if not st.session_state.logged_in:
+# THE GUARD: Everything inside this block only happens IF you are NOT logged in
+if st.session_state.logged_in is False:
     st.title("🛡️ Rx Assistant Pro - Access")
-    with st.form("reg_gate"):
-        u_name = st.text_input("Name")
-        u_email = st.text_input("Email")
-        if st.form_submit_button("Access Tool"):
-            if u_name and u_email:
-                # ... (Keep your existing Google Sheet logging code here) ...
-                st.session_state.logged_in = True
-                st.rerun()
-    st.stop() # THIS MUST BE INSIDE THE 'if not logged_in' block
+    with st.form("registration_gate"):
+        user_name = st.text_input("Full Name")
+        user_email = st.text_input("Email")
+        if st.form_submit_button("Access Rx Assistant Pro"):
+            if user_name and user_email:
+                try:
+                    # SECRETS HANDSHAKE
+                    p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
+                    c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
+                    p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
+                    s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
+                    
+                    creds_dict = {
+                        "type": "service_account",
+                        "project_id": p_id,
+                        "private_key": p_key.replace('\\n', '\n') if p_key else "",
+                        "client_email": c_email,
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                    client = gspread.authorize(creds)
+                    sheet = client.open_by_key(s_id).sheet1
+                    
+                    # LOG TO GOOGLE
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    sheet.append_row([current_time, user_name, user_email])
+                    
+                    # LOCK THE DOOR
+                    st.session_state.logged_in = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Registration Error: {e}")
+            else:
+                st.warning("Please enter your name and email.")
+    
+    # CRITICAL: This stop MUST be inside the 'if logged_in is False' block
+    # This prevents the app from running the BMI/Impairment logic until authorized
+    st.stop()
 
-# =========================================================
-# 🔍 MAIN APP STARTS HERE (Only reached if logged_in is True)
-# =========================================================
+# ==========================================
+# 🔍 MAIN APP STARTS HERE
+# ==========================================
 
 # =========================================================
 # CALLBACKS (Reachable only if logged in)
