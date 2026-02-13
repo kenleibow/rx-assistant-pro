@@ -357,7 +357,7 @@ with tab1:
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
     
-if single_drug:
+    if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
