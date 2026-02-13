@@ -396,7 +396,7 @@ with tab1:
                     c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<span class='rating-text'>📊 Est. Rating: {insight['rating']}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<span class='rating-text'>📊 Est. Life Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                         
                         # --- PDF BUTTON ---
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
