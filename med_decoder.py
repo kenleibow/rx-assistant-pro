@@ -397,7 +397,12 @@ with tab1:
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
                         st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
-            except Exception as e: st.error(f"Error: {e}")
+            except Exception as e: 
+                st.error(f"Error: {e}")
+
+# This line ensures we are officially outside Tab 1 before Tab 2 starts
+with tab2:
+    # ... (rest of your multi-med code)
 
 with tab2:
     col_x, col_y = st.columns([4, 1])
