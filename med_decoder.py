@@ -433,7 +433,15 @@ with tab2:
             if valid_meds:
                 combo_text = combos if combos else ["No high-risk combinations found."]
                 pdf_bytes = create_pdf("Multi-Med Analysis", valid_meds, combo_text)
-                st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", mime="application/pdf", key="pdf_multi")
+                
+                # REPLACEMENT CODE WITH PDF FIX
+                st.download_button(
+                    label="📄 Download Combo Report", 
+                    data=pdf_bytes, 
+                    file_name="combo_report.pdf", 
+                    mime="application/pdf", 
+                    key="pdf_multi_final"
+                )
 
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
