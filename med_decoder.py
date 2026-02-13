@@ -118,15 +118,21 @@ def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
 # --- CSS STYLING ---
-# --- CSS STYLING (Mobile & Scroll Optimized) ---
-css_style = """<style>
-/* 1. 📱 IPHONE SCROLL & TOUCH FIX */
-html, body, .main {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-}
-.main .block-container {
-    padding-bottom: 15rem !important; /* Forces extra space at bottom for mobile menus */
+/* 📱 Mobile Specific: Optimized for iPhone */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding-bottom: 25rem !important; 
+    }
+    /* Show it on mobile, but make it smaller so it doesn't block text */
+    .bmi-pointer { 
+        display: block !important;
+        top: 10px !important; /* Move it higher on mobile */
+        left: 5px !important;
+        font-size: 11px !important; 
+        padding: 3px 8px !important;
+        opacity: 0.9; /* Slightly see-through */
+    }
+    section[data-testid="stSidebar"] { width: 80% !important; }
 }
 
 /* 2. RISK & RATING STYLES */
