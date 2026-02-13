@@ -431,10 +431,15 @@ with tab3:
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
                 
-                # Determine risk level for the matrix logic
+                # REVISED LOGIC: Matrix now reacts to Smoker/BMI
                 r_text = data['rating'].lower()
                 risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
                 if "preferred" in r_text and "table" not in r_text: risk_lv = "risk-safe"
+                
+                # BUMP RISK if Smoker or High BMI
+                if is_smoker or bmi > 35:
+                    if risk_lv == "risk-safe": risk_lv = "risk-med"
+                    elif risk_lv == "risk-med": risk_lv = "risk-high"
 
                 with st.container():
                     st.markdown(f"### {cond}")
@@ -443,7 +448,12 @@ with tab3:
                     st.markdown("**Underwriting Suitability by Product Type:**")
                     st.table(get_product_matrix(risk_lv))
 
+                    # NEW HEADER FOR QUESTIONS
+                    st.markdown("#### ❓ Underwriting Questions to Ask")
+                    st.caption("These questions help determine eligibility for Life, DI, and LTC.")
+                    
                     for q in data['qs']: st.write(f"🔹 *{q}*")
+                    
                     pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
                     for q in data['qs']: pdf_lines.append(f" - {q}")
             
