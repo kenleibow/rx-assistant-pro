@@ -344,7 +344,7 @@ def check_comorbidities(selected_conditions, is_smoker, current_bmi):
         if "Sleep Apnea" in selected_conditions: warnings.append("BUILD RISK: Sleep Apnea with BMI > 35 requires documented CPAP compliance for best rates.")
     if "Diabetes Type 2" in selected_conditions and "Heart Attack (History of)" in selected_conditions: warnings.append("COMORBIDITY ALERT: Diabetes + Heart History is treated very strictly. Expect Table 4 minimum.")
     return warnings
-ddef get_product_matrix(risk_level):
+def get_product_matrix(risk_level):
     if risk_level == "risk-safe":
         return [
             {"Category": "Term (10-30yr)", "Outlook": "💎 Best", "Note": "Preferred Potential"},
