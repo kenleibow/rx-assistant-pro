@@ -357,7 +357,7 @@ with tab1:
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
     
-if single_drug:
+    if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
@@ -402,7 +402,6 @@ if single_drug:
                 st.error(f"Error: {e}")
 
 with tab2:
-    # Tab 2 code starts here...
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
     with col_y: st.button("🔄 Clear List", on_click=clear_multi, key="clear_2")
@@ -434,7 +433,7 @@ with tab2:
             if valid_meds:
                 combo_text = combos if combos else ["No high-risk combinations found."]
                 pdf_bytes = create_pdf("Multi-Med Analysis", valid_meds, combo_text)
-                st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", key="pdf_multi")
+                st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", mime="application/pdf", key="pdf_multi")
 
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
@@ -456,56 +455,36 @@ with tab3:
         pdf_lines = []
         if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
         
-    if conditions:
+        if conditions:
+            current_matrix = None # Initialize
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
-                
-                # Risk Logic
                 r_text = data['rating'].lower()
                 risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
                 if "preferred" in r_text and "table" not in r_text: risk_lv = "risk-safe"
                 
-                # Risk Bump for Smoker/BMI
                 if is_smoker or bmi > 35:
                     if risk_lv == "risk-safe": risk_lv = "risk-med"
                     elif risk_lv == "risk-med": risk_lv = "risk-high"
 
                 st.markdown(f"### {cond}")
-                
-                # Create the same 1:2 column ratio as Tab 1
                 ic1, ic2 = st.columns([1, 2])
                 with ic1:
-                    # UPDATED: Changed to Base Life Rating
                     st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
-                    st.write("") # Spacer
-
                 with ic2:
-                    # Condensed Title and Questions
                     st.markdown("#### ❓ Field Questions:")
                     for q in data['qs']: 
                         st.write(f"✅ *{q}*")
-                    
-                    # Condensed Matrix
                     st.markdown("#### 🎯 Product Suitability Matrix")
-                    current_matrix = get_product_matrix(risk_lv) # Capture this for the PDF
+                    current_matrix = get_product_matrix(risk_lv)
                     st.table(current_matrix)
 
-                # Keep the PDF lines logic behind the scenes
                 pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            
-            # 1. Generate the PDF bytes
             imp_pdf_bytes = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
-            
-            # 2. Use the download button with explicit PDF settings
-            st.download_button(
-                label="📄 Download Impairment Report",
-                data=imp_pdf_bytes,
-                file_name="imp_report.pdf",
-                mime="application/pdf",  # THIS TELLS THE BROWSER IT IS A PDF
-                key="pdf_imp_final"
+            st.download_button(label="📄 Download Impairment Report", data=imp_pdf_bytes, file_name="imp_report.pdf", mime="application/pdf", key="pdf_imp_final")
             )
 # --- FOOTER ---
 st.markdown("---")
