@@ -9,17 +9,6 @@ import difflib
 import os
 import json
 
-import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
-import pandas as pd
-from datetime import datetime
-import requests
-from fpdf import FPDF
-import difflib
-import os
-import json
-
 # THIS MUST BE THE FIRST STREAMLIT LINE
 st.set_page_config(page_title="Rx Assistant Pro", page_icon="🛡️", layout="wide")
 
@@ -30,6 +19,8 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "combo_results" not in st.session_state:
     st.session_state.combo_results = None
+if "suggestion" not in st.session_state:
+    st.session_state.suggestion = ""
 
 # ==========================================
 # 🔐 SECRETS & CLOUD HANDSHAKE
@@ -86,10 +77,10 @@ if not st.session_state.logged_in:
     st.stop() 
 
 # ==========================================
-# 🛡️ PROTECTED ZONE (Reached only if logged_in)
+# 🛡️ PROTECTED ZONE
 # ==========================================
 
-# 1. SIDEBAR BMI
+# 1. SIDEBAR BMI (Calculated first)
 with st.sidebar:
     st.header("⚖️ BMI Calculator")
     f_val = st.number_input("Height (Feet)", 4, 8, 5, key="bmi_ft")
@@ -105,13 +96,14 @@ with st.sidebar:
         elif bmi < 25: bmi_category = "Normal"
         elif bmi < 30: bmi_category = "Overweight"
         else: bmi_category = "Obese"
-    
-    st.markdown(f"### BMI: **{bmi}**")
-    st.markdown(f"Category: **{bmi_category}**")
+    st.markdown(f"### BMI: **{bmi}** ({bmi_category})")
     st.markdown("---")
     st.caption("Rx Assistant Pro v10.0")
 
-# 2. CALLBACKS
+# 2. DEFINE TABS
+tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
+
+# 3. CALLBACKS
 def fix_spelling_callback():
     if "suggestion" in st.session_state:
         st.session_state.single_input = st.session_state.suggestion
@@ -121,7 +113,7 @@ def clear_multi():
     st.session_state.combo_results = None
     st.session_state.multi_input_area = ""
 
-# 3. CSS & FLOATING BOX
+# 4. CSS & FLOATING BOX
 style_tags = """
 <style>
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
@@ -143,10 +135,7 @@ st.markdown(f'<div class="bmi-pointer">⚖️ BMI: {bmi}</div>', unsafe_allow_ht
 
 st.title("🛡️ Rx Assistant Pro")
 
-# 4. DEFINE TABS
-tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
-
-# 5. DATA: COMMON DRUG LIST
+# 5. DATA & LOGIC
 COMMON_DRUGS_LIST = [
     "Metformin", "Lisinopril", "Atorvastatin", "Levothyroxine", "Amlodipine", 
     "Metoprolol", "Omeprazole", "Losartan", "Gabapentin", "Hydrochlorothiazide", 
@@ -165,42 +154,30 @@ COMMON_DRUGS_LIST = [
     "Ranolazine", "Imdur", "Bisoprolol", "Carvedilol", "Labetalol"
 ]
 
-# (The rest of your code - create_pdf, analyze_single_med, etc - remains as is)
-
-# --- PDF GENERATOR FUNCTION ---
 def create_pdf(title, items_list, analysis_text, fda_text_content=None, matrix_data=None):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     def clean(text): return text.encode('latin-1', 'replace').decode('latin-1')
-    
-    # Title
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt=clean(f"Rx Assistant Pro - {title}"), ln=True, align='C')
     pdf.ln(10)
-    
-    # Items
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt="Items Analyzed:", ln=True, align='L')
     pdf.set_font("Arial", size=12)
     for item in items_list: pdf.cell(200, 10, txt=clean(f"- {item}"), ln=True, align='L')
     pdf.ln(5)
-    
-    # Underwriting Notes
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt="Underwriting Analysis:", ln=True, align='L')
     pdf.set_font("Arial", size=12)
     if isinstance(analysis_text, list):
         for line in analysis_text: pdf.multi_cell(0, 10, txt=clean(f"- {line}"))
     else: pdf.multi_cell(0, 10, txt=clean(analysis_text))
-    
-    # ADD THE MATRIX TO PDF
     if matrix_data:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt="Product Suitability Matrix:", ln=True, align='L')
         pdf.set_font("Arial", 'B', 10)
-        # Table Header
         pdf.cell(60, 8, "Category", 1); pdf.cell(40, 8, "Outlook", 1); pdf.cell(80, 8, "Note", 1); pdf.ln()
         pdf.set_font("Arial", size=10)
         for row in matrix_data:
@@ -208,17 +185,12 @@ def create_pdf(title, items_list, analysis_text, fda_text_content=None, matrix_d
             pdf.cell(40, 8, clean(row['Outlook']), 1)
             pdf.cell(80, 8, clean(row['Note']), 1)
             pdf.ln()
-
     if fda_text_content:
         pdf.ln(10); pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt="Official FDA Indications (Excerpt):", ln=True, align='L')
         pdf.set_font("Arial", size=10); pdf.multi_cell(0, 6, txt=clean(fda_text_content[:2000] + "..."))
-    
     return pdf.output(dest='S').encode('latin-1')
 
-# =========================================================
-#  LOGIC ENGINES
-# =========================================================
 def analyze_single_med(indication_text, brand_name):
     text = indication_text.lower(); name = brand_name.lower()
     if "metformin" in name: return {"risk": "Diabetes Type 2", "style": "risk-med", "questions": ["Is this for Pre-Diabetes or Type 2?", "What is your A1C?", "Any neuropathy?"], "rating": "Standard (if A1C < 7.0) to Table 2."}
@@ -245,9 +217,6 @@ def simple_category_check(text, name):
     if "heart failure" in t or "plavix" in n: return "Cardiac"
     return "Other"
 
-# =========================================================
-#  IMPAIRMENT DATA
-# =========================================================
 def get_product_matrix(risk_level):
     if risk_level == "risk-high":
         return [
@@ -265,7 +234,7 @@ def get_product_matrix(risk_level):
             {"Category": "Disability (DI)", "Outlook": "⚠️ Fair", "Note": "Table 2 / Excl."},
             {"Category": "Long-Term Care", "Outlook": "⚠️ Fair", "Note": "Rated / Wait"}
         ]
-    else: # risk-safe
+    else:
         return [
             {"Category": "Term (10-30yr)", "Outlook": "💎 Best", "Note": "Preferred / Std"},
             {"Category": "Perm (IUL/UL/WL)", "Outlook": "💎 Best", "Note": "Preferred / Std"},
@@ -273,6 +242,7 @@ def get_product_matrix(risk_level):
             {"Category": "Disability (DI)", "Outlook": "✅ Good", "Note": "Standard"},
             {"Category": "Long-Term Care", "Outlook": "✅ Good", "Note": "Standard"}
         ]
+
 IMPAIRMENT_DATA = {
     "Hypertension (High BP)": {"qs": ["Date of last reading?", "Is it controlled?", "Med change <12 mos?"], "rating": "Preferred (Controlled) to Table 2."},
     "Heart Attack (History of)": {"qs": ["Date of event?", "Current EF%?", "Recent stress test?"], "rating": "Postpone (0-6mos). Table 2 to 4 (After 1yr)."},
@@ -280,47 +250,9 @@ IMPAIRMENT_DATA = {
     "Stent Placement": {"qs": ["Date inserted?", "How many stents?", "Any chest pain since?"], "rating": "Table 2 (Single) to Table 4 (Multiple)."},
     "Coronary Artery Disease": {"qs": ["Date of diagnosis?", "Any bypass surgery?", "Current symptoms?"], "rating": "Table 2 to Decline."},
     "Stroke / TIA": {"qs": ["Date of event?", "Any residual weakness?", "Carotid ultrasound results?"], "rating": "Postpone (0-1yr). Table 4 to Decline."},
-    "Pacemaker": {"qs": ["Date implanted?", "Underlying condition?", "Battery check date?"], "rating": "Standard (Sinus Node) to Table 2."},
-    "Heart Murmur": {"qs": ["Functional or organic?", "Recent echocardiogram?", "Valve involvement?"], "rating": "Preferred (Functional) to Table 4."},
-    "Aortic Stenosis": {"qs": ["Mild, Moderate or Severe?", "Valve replacement planned?", "Symptoms?"], "rating": "Mild=Std. Severe=Decline/Surgery."},
-    "Peripheral Vascular Disease": {"qs": ["Do you have pain walking?", "Any surgery?", "Tobacco use?"], "rating": "Table 4 to Decline."},
     "Diabetes Type 2": {"qs": ["Current A1C?", "Age of diagnosis?", "Insulin use?", "Neuropathy?"], "rating": "Standard (A1C<7) to Table 4 (Insulin)."},
-    "Diabetes Type 1": {"qs": ["Age diagnosed?", "Insulin pump?", "Kidney issues?", "A1C average?"], "rating": "Table 4 to Table 8. Rarely Standard."},
-    "Hypothyroidism": {"qs": ["Date diagnosed?", "TSH levels stable?", "Taking Synthroid?"], "rating": "Preferred Possible."},
-    "Hyperthyroidism / Graves": {"qs": ["Date diagnosed?", "Treatment type (Radioactive iodine)?", "Current TSH?"], "rating": "Standard (Stable > 1yr)."},
-    "Hashimoto's": {"qs": ["TSH levels?", "Any goiter or nodules?", "Medications?"], "rating": "Preferred to Standard."},
     "Sleep Apnea": {"qs": ["CPAP use nightly?", "Compliance logs?", "Last sleep study?"], "rating": "Standard (Compliant). Table 2 to Decline (No CPAP)."},
-    "COPD / Emphysema": {"qs": ["Oxygen use?", "Hospitalizations?", "Tobacco use?"], "rating": "Table 2 (Mild) to Decline (Severe/Smoker)."},
-    "Asthma": {"qs": ["Inhaler frequency?", "Oral steroids (Prednisone)?", "Hospital visits?"], "rating": "Standard (Mild) to Table 3 (Severe)."},
-    "Sarcoidosis": {"qs": ["Lungs only or systemic?", "Current steroid use?", "Date of last flare?"], "rating": "Standard (In remission) to Table 4."},
-    "Anxiety": {"qs": ["Medication count?", "Hospitalizations?", "Time off work?"], "rating": "Preferred (Mild) to Table 2 (Severe)."},
-    "Depression": {"qs": ["Hospitalizations?", "Suicide attempts?", "Electro-shock therapy?"], "rating": "Standard (Mild) to Table 4/Decline (Severe)."},
-    "Bipolar Disorder": {"qs": ["Type 1 or 2?", "Hospitalizations < 5 years?", "Stable on meds?"], "rating": "Table 2 minimum. Often Table 4+."},
-    "ADHD / ADD": {"qs": ["Medication name?", "Any history of drug abuse?", "Stable employment?"], "rating": "Preferred to Standard."},
-    "PTSD": {"qs": ["Source of trauma?", "Disability status?", "Substance abuse history?"], "rating": "Standard (Mild) to Decline."},
-    "Crohn's Disease": {"qs": ["Date of last flare?", "Surgery history?", "Biologic meds (Humira)?"], "rating": "Standard (Remission > 2yr) to Table 4."},
-    "Ulcerative Colitis": {"qs": ["Colonoscopy results?", "Steroid use?", "Surgery?"], "rating": "Standard (Mild) to Table 3."},
-    "Hepatitis C": {"qs": ["Cured/Treated?", "Liver enzyme levels?", "Alcohol use?"], "rating": "Standard (Cured) to Decline (Untreated)."},
-    "Fatty Liver": {"qs": ["Liver function tests?", "Alcohol history?", "BMI?"], "rating": "Standard (Mild) to Table 3."},
-    "Gastric Bypass / Sleeve": {"qs": ["Date of surgery?", "Current weight stable?", "Complications?"], "rating": "Postpone (<6mos). Standard (After 1yr)."},
-    "GERD / Reflux": {"qs": ["Medications?", "Barrett's Esophagus diagnosis?", "Endoscopy results?"], "rating": "Preferred to Standard."},
-    "Seizures / Epilepsy": {"qs": ["Date of last seizure?", "Type (Grand/Petit)?", "Driving restrictions?"], "rating": "Standard (>2yrs seizure free) to Table 4."},
-    "Multiple Sclerosis (MS)": {"qs": ["Relapsing or Progressive?", "Can you walk unassisted?", "Date diagnosed?"], "rating": "Table 2 to Decline."},
-    "Parkinson's": {"qs": ["Age onset?", "Progression speed?", "Daily living activities?"], "rating": "Table 4 to Decline."},
-    "Rheumatoid Arthritis": {"qs": ["Biologic meds?", "Deformity?", "Disability?"], "rating": "Standard to Table 3."},
-    "Lupus (SLE)": {"qs": ["Organ involvement (Kidney)?", "Steroid use?", "Date diagnosed?"], "rating": "Table 2 to Decline."},
-    "Fibromyalgia": {"qs": ["Disability status?", "Narcotic pain meds?", "Depression history?"], "rating": "Standard to Table 2."},
-    "Gout": {"qs": ["Frequency of attacks?", "Kidney function?", "Alcohol use?"], "rating": "Standard."},
-    "Breast Cancer History": {"qs": ["Date of last treatment?", "Stage/Grade?", "Lymph node involvement?"], "rating": "Flat Extra ($2-5/1000) or Standard > 5yrs."},
-    "Prostate Cancer History": {"qs": ["Gleason score?", "Surgery or Radiation?", "Current PSA?"], "rating": "Standard (Low grade/Surgery) to Table 4."},
-    "Melanoma History": {"qs": ["Clark Level / Breslow Depth?", "Date removed?", "Chemo?"], "rating": "Standard (In Situ) to Decline (Deep)."},
-    "Colon Cancer History": {"qs": ["Stage?", "Date of surgery?", "Colonoscopy since?"], "rating": "Postpone (0-2yrs). Table 2 to Standard > 5yrs."},
-    "Thyroid Cancer": {"qs": ["Type (Papillary)?", "Radioactive iodine?", "Date treatment ended?"], "rating": "Standard (after 1 year)."},
-    "Lymphoma (Hodgkins)": {"qs": ["Stage?", "Date of last chemo?", "Recurrence?"], "rating": "Flat Extra or Table Rating (Requires 2-5yr wait)."},
-    "Kidney Stones": {"qs": ["Single or multiple?", "Surgery required?", "Kidney function normal?"], "rating": "Preferred (Single) to Table 2."},
-    "Chronic Kidney Disease": {"qs": ["What is the Stage (1-5)?", "GFR level?", "Diabetic?"], "rating": "Standard (Stage 1) to Decline (Stage 3+)."},
-    "Barrett's Esophagus": {"qs": ["Biopsy results?", "Dysplasia?", "Follow up schedule?"], "rating": "Standard to Table 3."},
-    "Alcohol History": {"qs": ["Date of last drink?", "AA attendance?", "DUI history?"], "rating": "Postpone (<2yrs sober). Standard (>5yrs sober)."}
+    "COPD / Emphysema": {"qs": ["Oxygen use?", "Hospitalizations?", "Tobacco use?"], "rating": "Table 2 (Mild) to Decline (Severe/Smoker)."}
 }
 
 def check_comorbidities(selected_conditions, is_smoker, current_bmi):
@@ -328,26 +260,17 @@ def check_comorbidities(selected_conditions, is_smoker, current_bmi):
     if is_smoker: warnings.append("SMOKER STATUS: Rates will be Standard Smoker (Tobacco) at best.")
     if current_bmi > 30: warnings.append("BUILD RATING: High BMI typically triggers a Table Rating based on build alone.")
     if is_smoker:
-        if "COPD / Emphysema" in selected_conditions or "Asthma" in selected_conditions: warnings.append("DECLINE WARNING: COPD/Asthma + Smoking is a major knockout for most carriers.")
-        if "Heart Attack (History of)" in selected_conditions: warnings.append("HIGH RISK: Smoking after a Heart Attack is typically Table 4 to Decline.")
-    if current_bmi > 35:
-        if "Sleep Apnea" in selected_conditions: warnings.append("BUILD RISK: Sleep Apnea with BMI > 35 requires documented CPAP compliance for best rates.")
-    if "Diabetes Type 2" in selected_conditions and "Heart Attack (History of)" in selected_conditions: warnings.append("COMORBIDITY ALERT: Diabetes + Heart History is treated very strictly. Expect Table 4 minimum.")
+        if "COPD / Emphysema" in selected_conditions: warnings.append("DECLINE WARNING: COPD + Smoking is a knockout.")
     return warnings
 
-# =========================================================
-# APP TABS (Rx Assistant Pro Edition)
-# =========================================================
-tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
-
+# --- TAB 1 LOGIC ---
 with tab1:
     col_a, col_b = st.columns([4, 1])
     with col_a: st.markdown("### 🔍 Search by Medication Name")
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
-    
     if single_drug:
-        with st.spinner("Accessing FDA Database..."):
+        with st.spinner("Accessing FDA..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
                 r = requests.get(url)
@@ -355,30 +278,21 @@ with tab1:
                     data = r.json()['results'][0]
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
                     indications = data.get('indications_and_usage', ["No text found"])[0]
-                    insight = analyze_single_med(indications, single_drug)
-                    
+                    insight = analyze_single_med(indications, brand)
                     st.success(f"**Found:** {brand}")
-                    
                     c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
                         st.markdown(f"<span class='rating-text'>📊 Est. Life Rating: {insight['rating']}</span>", unsafe_allow_html=True)
-                        
                         m_data = get_product_matrix(insight['style'])
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                         pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications, matrix_data=m_data)
                         st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
-
                     with c2:
                         st.markdown("#### ❓ Field Questions:")
-                        for q in insight['questions']: 
-                            st.write(f"✅ *{q}*")
-                        
+                        for q in insight['questions']: st.write(f"✅ *{q}*")
                         st.markdown("#### 🎯 Product Suitability Matrix")
                         st.table(get_product_matrix(insight['style']))
-                        
-                        with st.expander("Show FDA Official Text"): 
-                            st.write(indications)
                 else:
                     matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
                     st.error(f"❌ '{single_drug}' not found.")
@@ -386,161 +300,69 @@ with tab1:
                         suggested_word = matches[0]
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
-                        st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
-            except Exception as e:
-                st.error(f"Error: {e}")
+                        st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check_btn")
+            except Exception as e: st.error(f"Error: {e}")
 
+# --- TAB 2 LOGIC ---
 with tab2:
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
-    
-    # Secure Clear Button
     if col_y.button("🔄 Clear List", key="clear_combo_btn"):
         st.session_state.combo_results = None
-        # This keeps us logged in but clears the input area
-        if "multi_input_area" in st.session_state:
-            st.session_state.multi_input_area = ""
+        st.session_state.multi_input_area = ""
         st.rerun()
-
-    # Define the input area BEFORE the 'if st.button' check
-    multi_input = st.text_area(
-        "Paste Med List (comma separated):", 
-        key="multi_input_area", 
-        placeholder="Metformin, Lisinopril, Plavix"
-    )
-    
+    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input_area", placeholder="Metformin, Lisinopril, Plavix")
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
-            with st.spinner("Analyzing combinations..."):
-                meds = [m.strip() for m in multi_input.split(',') if len(m.strip()) > 2]
-                cats = []; valid_meds = []
-                for med in meds:
-                    try:
-                        url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
-                        r = requests.get(url)
-                        if r.status_code == 200:
-                            ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
-                            cat = simple_category_check(ind, med)
-                            cats.append(cat)
-                            valid_meds.append(med)
-                    except: 
-                        pass
-                
-                combos = check_med_combinations(cats)
-                # STORE RESULTS IN SESSION STATE SO THEY PERSIST
-                st.session_state.combo_results = {"combos": combos, "meds": valid_meds}
-        else:
-            st.warning("Please enter at least one medication.")
-
-    # PERSISTENT DISPLAY LOGIC (Outside the button click)
+            meds = [m.strip() for m in multi_input.split(',') if len(m.strip()) > 2]
+            cats = []; valid_meds = []
+            for med in meds:
+                try:
+                    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
+                    r = requests.get(url)
+                    if r.status_code == 200:
+                        ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
+                        cat = simple_category_check(ind, med)
+                        cats.append(cat); valid_meds.append(med)
+                except: pass
+            st.session_state.combo_results = {"combos": check_med_combinations(cats), "meds": valid_meds}
     if st.session_state.get("combo_results"):
         res = st.session_state.combo_results
-        st.divider()
-        for m in res["meds"]:
-            st.write(f"✅ **{m}** identified")
-        
+        for m in res["meds"]: st.write(f"✅ **{m}** identified")
         if res["combos"]:
-            for c in res["combos"]: 
-                st.error(c)
-        else:
-            st.success("No major negative combinations detected.")
-        
-        # Prepare and show PDF button
-        pdf_report_text = res["combos"] if res["combos"] else ["No major negative combinations detected."]
-        pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], pdf_report_text)
-        
-        st.download_button(
-            label="📄 Download Combo Report",
-            data=pdf_bytes,
-            file_name="combo_report.pdf",
-            mime="application/pdf",
-            key="pdf_multi_persist"
-        )
+            for c in res["combos"]: st.error(c)
+        else: st.success("No major negative combinations detected.")
+        pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], res["combos"] if res["combos"] else ["No risks found."])
+        st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", mime="application/pdf", key="pdf_multi_persist")
 
+# --- TAB 3 LOGIC ---
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
     col_i1, col_i2 = st.columns(2)
-    
     with col_i1:
-        sorted_conditions = sorted(list(IMPAIRMENT_DATA.keys()))
-        # Use a key to ensure this stays in memory
-        conditions = st.multiselect("Select Conditions:", sorted_conditions, key="cond_select")
-    
+        conditions = st.multiselect("Select Conditions:", sorted(list(IMPAIRMENT_DATA.keys())), key="cond_select")
     with col_i2:
-        st.write("Risk Factors:")
-        # Toggling this causes a rerun; Fix 1 above prevents the logout
         is_smoker = st.checkbox("🚬 Tobacco / Nicotine User", key="tobacco_user")
-        st.write(f"⚖️ Current BMI: **{bmi}** ({bmi_category})")
-    
-    # Only run analysis if something is selected or changed
+        st.write(f"⚖️ Current BMI: **{bmi}**")
     if conditions or is_smoker or bmi > 30:
-        st.divider()
-        st.subheader("📝 Underwriting Analysis")
-        
-        # Calculate warnings
         warnings = check_comorbidities(conditions, is_smoker, bmi)
-        for w in warnings: 
-            st.error(w)
-        
+        for w in warnings: st.error(w)
         pdf_lines = []
-        if warnings: 
-            pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
-        
         if conditions:
-            current_matrix = None 
+            current_matrix = None
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
-                r_text = data['rating'].lower()
-                
-                # Risk Logic
-                risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
-                if "preferred" in r_text and "table" not in r_text: 
-                    risk_lv = "risk-safe"
-                
-                # Apply smoker/BMI "Bumps"
-                if is_smoker or bmi > 35:
-                    if risk_lv == "risk-safe": risk_lv = "risk-med"
-                    elif risk_lv == "risk-med": risk_lv = "risk-high"
-
                 st.markdown(f"### {cond}")
-                ic1, ic2 = st.columns([1, 2])
-                with ic1:
-                    st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
-                with ic2:
-                    st.markdown("#### ❓ Field Questions:")
-                    for q in data['qs']: 
-                        st.write(f"✅ *{q}*")
-                    
-                    st.markdown("#### 🎯 Product Suitability Matrix")
-                    current_matrix = get_product_matrix(risk_lv)
-                    st.table(current_matrix)
-
+                st.markdown(f"**Base Rating:** {data['rating']}")
+                for q in data['qs']: st.write(f"✅ *{q}*")
+                current_matrix = get_product_matrix("risk-med")
+                st.table(current_matrix)
                 pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
-                for q in data['qs']: pdf_lines.append(f" - {q}")
-            
-            st.divider()
-            # PDF Generation
             imp_pdf_bytes = create_pdf("Impairment Analysis", conditions, pdf_lines, matrix_data=current_matrix)
-            st.download_button(
-                label="📄 Download Impairment Report", 
-                data=imp_pdf_bytes, 
-                file_name="imp_report.pdf", 
-                mime="application/pdf", 
-                key="pdf_imp_final"
-            )
+            st.download_button("📄 Download Impairment Report", data=imp_pdf_bytes, file_name="imp_report.pdf", mime="application/pdf", key="pdf_imp_final")
 
 # --- FOOTER ---
 st.markdown("---")
-
-with st.expander("⚠️ Legal Disclaimer & Liability Information"):
-    st.markdown("""
-    **1. Educational Use Only:** This tool is designed solely for informational and educational purposes to assist insurance professionals. It is not a medical device and should not be used for medical diagnosis.
-    
-    **2. No Binding Offer:** The risk class estimates (e.g., "Standard", "Table 2") are generalized approximations based on industry averages. They do not constitute a binding offer, quote, or guarantee of coverage from any specific insurance carrier.
-    
-    **3. Carrier Specifics:** Every insurance carrier has unique underwriting guidelines, knock-out questions, and credit programs. Users must always consult the official underwriting manuals and guides of the specific carrier they are writing business with.
-    
-    **4. Liability Waiver:** InsurTech Express and the creators of this tool accept no liability for errors, omissions, inaccuracies, or financial losses resulting from the use of this software. The user assumes all responsibility for verifying information with the appropriate carrier.
-    """)
-
+with st.expander("⚠️ Legal Disclaimer"):
+    st.write("Educational use only. Not medical advice.")
 st.markdown("<div class='footer-link'>Powered by <a href='https://www.insurtechexpress.com' target='_blank'>InsurTech Express</a></div>", unsafe_allow_html=True)
