@@ -110,6 +110,7 @@ def clear_multi():
     st.session_state.combo_results = None
     st.session_state.multi_input_area = ""
 
+# --- 1. THE RESTORED CSS (Fixes the Blue BMI Box) ---
 css_style = """<style>
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
@@ -118,11 +119,61 @@ css_style = """<style>
 div.stButton > button { width: 100%; }
 .footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
 .footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
-.bmi-pointer { position: fixed; top: 60px; left: 20px; z-index: 9999; background-color: #0066cc; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px; pointer-events: none; }
-</style>
-<div class="bmi-pointer">BMI Calculator</div>"""
 
-st.markdown(css_style, unsafe_allow_html=True)
+/* THE BLUE BMI INDICATOR */
+.bmi-pointer { 
+    position: fixed; 
+    top: 70px; 
+    left: 10px; 
+    z-index: 9999; 
+    background-color: #0066cc; 
+    color: white; 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    font-weight: bold; 
+    font-size: 14px; 
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+}
+</style>
+<div class="bmi-pointer">⚖️ BMI: {bmi}</div>"""
+
+# Note: We use .format(bmi=bmi) below to make the box dynamic
+st.markdown(css_style.format(bmi=bmi), unsafe_allow_html=True)
+
+# --- 2. THE RESTORED TAB 1 (Fixes Fuzzy Match) ---
+with tab1:
+    col_a, col_b = st.columns([4, 1])
+    with col_a: st.markdown("### 🔍 Search by Medication Name")
+    with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
+    
+    # We use 'single_input' as the key to link with the spelling callback
+    single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
+    
+    if single_drug:
+        with st.spinner("Accessing FDA Database..."):
+            try:
+                url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
+                r = requests.get(url)
+                if r.status_code == 200:
+                    data = r.json()['results'][0]
+                    brand = data['openfda'].get('brand_name', [single_drug])[0]
+                    indications = data.get('indications_and_usage', ["No text found"])[0]
+                    insight = analyze_single_med(indications, brand)
+                    
+                    st.success(f"**Found:** {brand}")
+                    # ... (rest of your display columns C1, C2)
+                else:
+                    # FUZZY MATCH LOGIC STARTS HERE
+                    matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
+                    st.error(f"❌ '{single_drug}' not found.")
+                    if matches:
+                        suggested_word = matches[0]
+                        st.info(f"💡 Did you mean: **{suggested_word}**?")
+                        st.session_state.suggestion = suggested_word
+                        # This button triggers the fix_spelling_callback
+                        st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check_btn")
+            except Exception as e:
+                st.error(f"Search Error: {e}")
 st.title("🛡️ Rx Assistant Pro")
 
 # (The rest of your code - create_pdf, analyze_single_med, etc - remains as is)
