@@ -425,28 +425,45 @@ with tab3:
         
         pdf_lines = []
         if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
-        
         if conditions:
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
                 
-                # Determine risk level for the matrix logic
+                # Risk Logic
                 r_text = data['rating'].lower()
                 risk_lv = "risk-high" if "decline" in r_text or "table 4" in r_text else "risk-med"
                 if "preferred" in r_text and "table" not in r_text: risk_lv = "risk-safe"
+                
+                # Risk Bump for Smoker/BMI
+                if is_smoker or bmi > 35:
+                    if risk_lv == "risk-safe": risk_lv = "risk-med"
+                    elif risk_lv == "risk-med": risk_lv = "risk-high"
 
-                with st.container():
-                    st.markdown(f"### {cond}")
+                st.markdown(f"### {cond}")
+                
+                # Create the same 1:2 column ratio as Tab 1
+                ic1, ic2 = st.columns([1, 2])
+                
+                with ic1:
+                    # Base Rating Box
                     st.markdown(f"<span class='rating-text'>📊 Base Rating: {data['rating']}</span>", unsafe_allow_html=True)
+                    st.write("") # Spacer
+
+                with ic2:
+                    # Condensed Title and Questions
+                    st.markdown("#### ❓ Field Questions:")
+                    for q in data['qs']: 
+                        st.write(f"✅ *{q}*")
                     
-                    st.markdown("**Underwriting Suitability by Product Type:**")
+                    # Condensed Matrix
+                    st.markdown("#### 🎯 Product Suitability Matrix")
                     st.table(get_product_matrix(risk_lv))
 
-                    for q in data['qs']: st.write(f"🔹 *{q}*")
-                    pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
-                    for q in data['qs']: pdf_lines.append(f" - {q}")
+                # Keep the PDF lines logic behind the scenes
+                pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
+                for q in data['qs']: pdf_lines.append(f" - {q}")
             
-            st.markdown("---")
+            st.divider()
             imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
 
