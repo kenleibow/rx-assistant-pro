@@ -11,22 +11,17 @@ import json
 
 # THIS MUST BE THE FIRST STREAMLIT LINE
 st.set_page_config(page_title="Rx Assistant Pro", page_icon="🛡️", layout="wide")
+
 # ==========================================
 # 🔐 SECRETS & CLOUD HANDSHAKE
 # ==========================================
 
 def get_gspread_client():
-    import os
-    import json
-    import gspread
-    from google.oauth2.service_account import Credentials
-
     # 1. Try to build the key from the big Railway JSON variable
     try:
         gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
         if gcp_json:
             creds_dict = json.loads(gcp_json)
-            # Fix the private key formatting just in case
             if "private_key" in creds_dict:
                 creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
             
@@ -34,11 +29,10 @@ def get_gspread_client():
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
             return gspread.authorize(creds)
     except Exception as e:
-        print(f"Railway connection failed: {e}")
+        pass # Silent fail to allow fallback
 
     # 2. Safety Fallback for local testing/Streamlit Cloud
     try:
-        import streamlit as st
         if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
             return gspread.authorize(creds)
@@ -47,10 +41,8 @@ def get_gspread_client():
 
     return None
 
-# Load the credentials
-google_secrets = get_gspread_client()
 # ==========================================
-# 🔐 REGISTRATION & LOGGING SECTION
+# 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
 
 if "logged_in" not in st.session_state:
@@ -75,38 +67,33 @@ if not st.session_state.logged_in:
                     p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
 
-                    creds_dict = {
-                        "type": "service_account",
-                        "project_id": p_id,
-                        "private_key": p_key.replace('\\n', '\n'),
-                        "client_email": c_email,
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                    }
-                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
-                    sheet = client.open_by_key(s_id).sheet1
-                    
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
+                    if not s_id:
+                        st.error("Sheet ID not found in environment variables.")
+                    else:
+                        creds_dict = {
+                            "type": "service_account",
+                            "project_id": p_id,
+                            "private_key": p_key.replace('\\n', '\n') if p_key else "",
+                            "client_email": c_email,
+                            "token_uri": "https://oauth2.googleapis.com/token",
+                        }
+                        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                        client = gspread.authorize(creds)
+                        sheet = client.open_by_key(s_id).sheet1
+                        
+                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        sheet.append_row([current_time, user_name, user_email])
 
-                    st.session_state.logged_in = True
-                    st.success("✅ Success! Entering app...")
-                    st.rerun()
+                        # THIS LOCKS THE SESSION
+                        st.session_state.logged_in = True
+                        st.rerun()
                 except Exception as e:
-                    st.error(f"🚨 Connection Error: {e}")
-    
-    # This stops the code here ONLY IF the user isn't logged in yet
-    st.stop()
-
-# ==========================================
-# 🔍 MAIN APP STARTS BELOW THIS LINE
-# ==========================================
-# (Your drug search and decoder code goes here)
-# --- CONFIGURATION (Reached only if logged in) ---
+                    st.error(f"🚨 Registration Error: {e}")
+    st.stop() # This is now safely inside the "not logged in" logic block
 
 # =========================================================
-#  CALLBACKS (MUST BE AT THE TOP)
+# CALLBACKS (Reachable only if logged in)
 # =========================================================
 def fix_spelling_callback():
     if "suggestion" in st.session_state:
