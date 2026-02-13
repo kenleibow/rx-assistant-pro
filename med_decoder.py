@@ -134,18 +134,20 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Rx Assistant Pro v10.0")
 
-# --- CSS STYLING & FLOATING BMI BOX ---
-css_style = f"""<style>
-.risk-high {{ background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }}
-.risk-med {{ background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }}
-.risk-safe {{ background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }}
-.rating-text {{ font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }}
-div.stButton > button {{ width: 100%; }}
-.footer-link {{ text-align: center; margin-top: 20px; font-size: 14px; color: #888; }}
-.footer-link a {{ color: #0066cc; text-decoration: none; font-weight: bold; }}
+# --- CSS STYLING (The Bulletproof Version) ---
+# We define the CSS separately to avoid bracket conflicts
+style_tags = """
+<style>
+.risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
+.risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
+.risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
+.rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
+div.stButton > button { width: 100%; }
+.footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
+.footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
 
 /* THE BLUE BMI INDICATOR */
-.bmi-pointer {{ 
+.bmi-pointer { 
     position: fixed; 
     top: 80px; 
     left: 20px; 
@@ -158,11 +160,15 @@ div.stButton > button {{ width: 100%; }}
     font-size: 16px; 
     box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
     border: 1px solid white;
-}}
+}
 </style>
-<div class="bmi-pointer">⚖️ BMI: {bmi}</div>"""
+"""
 
-st.markdown(css_style, unsafe_allow_html=True)
+# Inject the CSS
+st.markdown(style_tags, unsafe_allow_html=True)
+
+# Inject the Floating Blue Box (Separate from the CSS to prevent KeyErrors)
+st.markdown(f'<div class="bmi-pointer">⚖️ BMI: {bmi}</div>', unsafe_allow_html=True)
 
 # --- 2. THE RESTORED TAB 1 (Fixes Fuzzy Match) ---
 with tab1:
