@@ -375,7 +375,6 @@ if single_drug:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
                         st.markdown(f"<span class='rating-text'>📊 Est. Life Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                         
-                        # --- PDF BUTTON ---
                         m_data = get_product_matrix(insight['style'])
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                         pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications, matrix_data=m_data)
