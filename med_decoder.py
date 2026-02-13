@@ -117,37 +117,21 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Mobile Scroll & Table Fix) ---
+# --- CSS STYLING (Mobile Loosened / Laptop Tightened) ---
 css_style = """<style>
-/* 1. 📱 IPHONE VERTICAL SCROLL LOCK-IN */
+/* 1. 📱 IPHONE SCROLL & TOUCH FIX */
 html, body, .main {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-.main .block-container {
-    padding-bottom: 25rem !important; 
-    /* This ensures vertical swipes always move the page */
-    touch-action: pan-y !important; 
-}
-
-/* 2. LOOSEN THE BLOCK CONTAINER */
+/* 📱 Mobile Specific: Huge runway for iPhone menus */
 @media (max-width: 768px) {
     .main .block-container {
-        padding-bottom: 30rem !important; /* Huge runway for iPhone only */
+        padding-bottom: 30rem !important; 
         overflow: visible !important;
         touch-action: auto !important;
     }
-}
-
-@media (min-width: 769px) {
-    .main .block-container {
-        padding-bottom: 5rem !important; /* Tight runway for Laptops */
-    }
-}
-
-/* 3. MOBILE SPECIFIC BOX */
-@media (max-width: 768px) {
     .bmi-pointer { 
         display: block !important;
         position: fixed !important;
@@ -156,27 +140,45 @@ html, body, .main {
         font-size: 11px !important; 
         padding: 4px 8px !important;
         z-index: 999999 !important;
-        pointer-events: none !important; /* CRITICAL: Finger goes "through" the box */
+        pointer-events: none !important; 
     }
 }
 
-/* 4. YOUR EXISTING RISK STYLES */
+/* 💻 Laptop Specific: Tight footer, no extra white space */
+@media (min-width: 769px) {
+    .main .block-container {
+        padding-bottom: 3rem !important;
+    }
+    .bmi-pointer { 
+        position: fixed; 
+        top: 60px; 
+        left: 20px; 
+        z-index: 99999; 
+        background-color: #0066cc; 
+        color: white; 
+        padding: 5px 10px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        font-size: 14px; 
+        pointer-events: none; 
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+    }
+}
+
+/* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
 .risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
 .rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
 
-/* 5. FOOTER & BUTTONS */
-div.stButton > button { width: 100%; }
-.footer-link { text-align: center; margin-top: 50px; font-size: 14px; color: #888; }
-
-/* 6. DESKTOP BMI BOX */
-.bmi-pointer { 
-    position: fixed; top: 60px; left: 20px; z-index: 99999; 
-    background-color: #0066cc; color: white; padding: 5px 10px; 
-    border-radius: 5px; font-weight: bold; font-size: 14px; 
-    pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+/* 3. TABLE & BUTTONS */
+div[data-testid="stTable"] {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
 }
+div.stButton > button { width: 100%; }
+.footer-link { text-align: center; margin-top: 40px; font-size: 14px; color: #888; }
 </style>
 <div class="bmi-pointer">BMI Indicator</div>"""
 
