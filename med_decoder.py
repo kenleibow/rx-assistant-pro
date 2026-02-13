@@ -42,34 +42,32 @@ def get_gspread_client():
     return None
 
 # ==========================================
-# 🔐 REGISTRATION & LOGGING SECTION
+# 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
 
 # 1. Initialize session state if it doesn't exist
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 2. Gatekeeper: If not logged in, show form and STOP the rest of the app
-if st.session_state.logged_in is False:
-    st.title("Rx Assistant - Registration")
-    st.write("Please provide your details to access the tool.")
+# 2. THE GUARD: If they are NOT logged in, show the form and STOP everything else
+if not st.session_state.logged_in:
+    st.title("🛡️ Rx Assistant Pro - Access")
+    st.info("Please register to access the Field Underwriting Tool.")
     
-    with st.form("login_form"):
-        user_name = st.text_input("Name")
-        user_email = st.text_input("Email")
-        submit = st.form_submit_button("Access Rx Assistant Pro")
-
-        if submit:
-            if not user_name or not user_email:
-                st.error("⚠️ Please fill in BOTH Name and Email.")
-            else:
+    with st.form("registration_gate"):
+        user_name = st.text_input("Full Name")
+        user_email = st.text_input("Email Address")
+        btn_access = st.form_submit_button("Access Rx Assistant Pro")
+        
+        if btn_access:
+            if user_name and user_email:
                 try:
-                    # Fetching Secrets
+                    # SECRETS HANDSHAKE
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
                     c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
                     p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
-
+                    
                     creds_dict = {
                         "type": "service_account",
                         "project_id": p_id,
@@ -82,23 +80,24 @@ if st.session_state.logged_in is False:
                     client = gspread.authorize(creds)
                     sheet = client.open_by_key(s_id).sheet1
                     
-                    # Log the user
+                    # LOG TO GOOGLE
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     sheet.append_row([current_time, user_name, user_email])
-
-                    # LOCK SESSION AND REFRESH
+                    
+                    # THE LOCK: Set this to True before rerunning
                     st.session_state.logged_in = True
-                    st.rerun() 
+                    st.rerun()
                 except Exception as e:
-                    st.error(f"🚨 Connection Error: {e}")
+                    st.error(f"Registration Error: {e}")
+            else:
+                st.warning("Both Name and Email are required.")
     
-    # CRITICAL: This stop must be INSIDE the 'if not logged_in' block
-    st.stop() 
+    # CRITICAL: This stop must be the LAST line of the 'if not logged_in' block
+    st.stop()
 
-# ==========================================
-# 🔍 MAIN APP STARTS BELOW THIS LINE
-# ==========================================
-# (The rest of your code continues here...)
+# =========================================================
+# 🔍 MAIN APP STARTS HERE (Only reached if logged_in is True)
+# =========================================================
 
 # =========================================================
 # CALLBACKS (Reachable only if logged in)
