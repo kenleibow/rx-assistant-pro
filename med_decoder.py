@@ -357,7 +357,7 @@ with tab1:
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
     
-    if single_drug:
+if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
@@ -379,16 +379,18 @@ with tab1:
                         m_data = get_product_matrix(insight['style'])
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                         pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications, matrix_data=m_data)
-                        st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", key=f"pdf_btn_{brand}")
+                        st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
 
                     with c2:
                         st.markdown("#### ❓ Field Questions:")
-                        for q in insight['questions']: st.write(f"✅ *{q}*")
+                        for q in insight['questions']: 
+                            st.write(f"✅ *{q}*")
                         
                         st.markdown("#### 🎯 Product Suitability Matrix")
                         st.table(get_product_matrix(insight['style']))
                         
-                        with st.expander("Show FDA Official Text"): st.write(indications)
+                        with st.expander("Show FDA Official Text"): 
+                            st.write(indications)
                 else:
                     matches = difflib.get_close_matches(single_drug, COMMON_DRUGS_LIST, n=1, cutoff=0.6)
                     st.error(f"❌ '{single_drug}' not found.")
@@ -397,11 +399,11 @@ with tab1:
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
                         st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
-      except Exception as e: 
+            except Exception as e:
                 st.error(f"Error: {e}")
 
-# --- TAB 2 START ---
 with tab2:
+    # Tab 2 code starts here...
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
     with col_y: st.button("🔄 Clear List", on_click=clear_multi, key="clear_2")
