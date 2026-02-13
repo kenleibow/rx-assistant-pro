@@ -100,45 +100,69 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Rx Assistant Pro v10.0")
 
-# 2. CALLBACKS & CSS (Restored the Blue BMI Box CSS)
+# =========================================================
+#  CALLBACKS (MUST BE AT THE TOP)
+# =========================================================
 def fix_spelling_callback():
     if "suggestion" in st.session_state:
         st.session_state.single_input = st.session_state.suggestion
 
 def clear_single(): st.session_state.single_input = ""
 def clear_multi(): 
-    st.session_state.combo_results = None
     st.session_state.multi_input_area = ""
+    st.session_state.combo_results = None
 
-# --- 1. THE RESTORED CSS (Fixes the Blue BMI Box) ---
-css_style = """<style>
-.risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
-.risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
-.risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
-.rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
-div.stButton > button { width: 100%; }
-.footer-link { text-align: center; margin-top: 20px; font-size: 14px; color: #888; }
-.footer-link a { color: #0066cc; text-decoration: none; font-weight: bold; }
+# =========================================================
+#  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
+# =========================================================
+with st.sidebar:
+    st.header("⚖️ BMI Calculator")
+    # Added keys to preserve values and prevent session resets/logouts
+    feet = st.number_input("Height (Feet)", 4, 8, 5, key="sidebar_ft_val")
+    inches = st.number_input("Height (Inches)", 0, 11, 9, key="sidebar_in_val")
+    weight = st.number_input("Weight (lbs)", 80, 500, 140, key="sidebar_wt_val")
+    
+    total_inches = (feet * 12) + inches
+    bmi = 0.0
+    bmi_category = "Normal"
+    if total_inches > 0:
+        bmi = round((weight / (total_inches ** 2)) * 703, 1)
+        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
+        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
+        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
+        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
+    st.markdown("---")
+    st.caption("Rx Assistant Pro v10.0")
+
+# --- CSS STYLING & FLOATING BMI BOX ---
+css_style = f"""<style>
+.risk-high {{ background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }}
+.risk-med {{ background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }}
+.risk-safe {{ background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }}
+.rating-text {{ font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }}
+div.stButton > button {{ width: 100%; }}
+.footer-link {{ text-align: center; margin-top: 20px; font-size: 14px; color: #888; }}
+.footer-link a {{ color: #0066cc; text-decoration: none; font-weight: bold; }}
 
 /* THE BLUE BMI INDICATOR */
-.bmi-pointer { 
+.bmi-pointer {{ 
     position: fixed; 
-    top: 70px; 
-    left: 10px; 
+    top: 80px; 
+    left: 20px; 
     z-index: 9999; 
     background-color: #0066cc; 
     color: white; 
-    padding: 8px 15px; 
-    border-radius: 5px; 
+    padding: 10px 15px; 
+    border-radius: 8px; 
     font-weight: bold; 
-    font-size: 14px; 
+    font-size: 16px; 
     box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-}
+    border: 1px solid white;
+}}
 </style>
 <div class="bmi-pointer">⚖️ BMI: {bmi}</div>"""
 
-# Note: We use .format(bmi=bmi) below to make the box dynamic
-st.markdown(css_style.format(bmi=bmi), unsafe_allow_html=True)
+st.markdown(css_style, unsafe_allow_html=True)
 
 # --- 2. THE RESTORED TAB 1 (Fixes Fuzzy Match) ---
 with tab1:
