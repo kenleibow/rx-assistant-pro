@@ -45,46 +45,43 @@ def get_gspread_client():
 # 🔐 REGISTRATION & SESSION LOCK
 # ==========================================
 
-# Initialize ALL needed state variables at the start
+# MUST initialize these at the very top
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "combo_results" not in st.session_state:
     st.session_state.combo_results = None
 
-# THE GUARD: This block MUST remain True to see the app
+# THE GATEKEEPER
 if not st.session_state.logged_in:
     st.title("🛡️ Rx Assistant Pro - Access")
-    with st.form("registration_gate"):
-        user_name = st.text_input("Full Name")
-        user_email = st.text_input("Email Address")
-        if st.form_submit_button("Access Rx Assistant Pro"):
-            if user_name and user_email:
+    with st.form("reg_form"):
+        u_name = st.text_input("Full Name")
+        u_email = st.text_input("Email")
+        if st.form_submit_button("Access Pro Tool"):
+            if u_name and u_email:
                 try:
-                    # SECRETS HANDSHAKE
+                    # SECRETS HANDSHAKE (simplified for clarity)
                     p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
-                    c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
-                    p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
                     s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
-                    
                     creds_dict = {
-                        "type": "service_account", "project_id": p_id,
-                        "private_key": p_key.replace('\\n', '\n') if p_key else "",
-                        "client_email": c_email, "token_uri": "https://oauth2.googleapis.com/token",
+                        "type": "service_account",
+                        "project_id": os.environ.get("PROJECT_ID"),
+                        "private_key": p_key.replace('\\n', '\n'),
+                        "client_email": os.environ.get("CLIENT_EMAIL"),
+                        "token_uri": "https://oauth2.googleapis.com/token",
                     }
-                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
+                    client = gspread.authorize(Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]))
                     sheet = client.open_by_key(s_id).sheet1
-                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_name, user_email])
+                    sheet.append_row([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), u_name, u_email])
                     
-                    # LOCK THE DOOR
+                    # LOCK THE SESSION
                     st.session_state.logged_in = True
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Registration Error: {e}")
+                    st.error(f"Login Error: {e}")
             else:
-                st.warning("Both Name and Email are required.")
-    st.stop() # App stops here if not logged in
+                st.warning("Please enter Name and Email.")
+    st.stop() # ABSOLUTELY HALT HERE IF NOT LOGGED IN
 
 # =========================================================
 # 🔍 MAIN APP STARTS HERE (Only reached if logged_in is True)
@@ -387,25 +384,53 @@ with tab1:
                 st.error(f"Error: {e}")
 
 with tab2:
-    # ... (header and text area code) ...
+    col_x, col_y = st.columns([4, 1])
+    with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
+    # UPDATED CLEAR: Instead of a callback, we clear the session state directly
+    if col_y.button("🔄 Clear List", key="clear_combo_btn"):
+        st.session_state.combo_results = None
+        st.rerun()
+
+    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input_area", placeholder="Metformin, Lisinopril, Plavix")
     
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
-            # ... (your existing logic to find cats and valid_meds) ...
+            meds = [m.strip() for m in multi_input.split(',')]
+            cats = []; valid_meds = []
+            for med in meds:
+                if len(med) < 3: continue
+                try:
+                    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
+                    r = requests.get(url)
+                    if r.status_code == 200:
+                        ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
+                        cat = simple_category_check(ind, med)
+                        cats.append(cat); valid_meds.append(med)
+                except: pass
+            
             combos = check_med_combinations(cats)
-            # SAVE TO SESSION STATE
+            # STORE RESULTS IN SESSION STATE SO THEY PERSIST
             st.session_state.combo_results = {"combos": combos, "meds": valid_meds}
 
-    # DISPLAY FROM SESSION STATE (This keeps it visible after download)
+    # PERSISTENT DISPLAY LOGIC
     if st.session_state.combo_results:
         res = st.session_state.combo_results
+        for m in res["meds"]:
+            st.write(f"✅ **{m}** identified")
+        
         if res["combos"]:
             for c in res["combos"]: st.error(c)
         else:
             st.success("No major negative combinations detected.")
-            
+        
         pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], res["combos"] if res["combos"] else ["No risks found."])
-        st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", mime="application/pdf", key="pdf_multi_final")
+        st.download_button(
+            label="📄 Download Combo Report",
+            data=pdf_bytes,
+            file_name="combo_report.pdf",
+            mime="application/pdf",
+            key="pdf_multi_persist"
+        )
 
 with tab3:
     st.markdown("### 🩺 Condition & Impairment Search")
