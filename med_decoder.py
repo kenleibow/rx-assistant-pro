@@ -357,7 +357,7 @@ with tab1:
     with col_b: st.button("🔄 Clear", on_click=clear_single, key="clear_1")
     single_drug = st.text_input("Enter Drug Name:", placeholder="e.g., Metformin", key="single_input")
     
-    if single_drug:
+if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
@@ -370,20 +370,19 @@ with tab1:
                     
                     st.success(f"**Found:** {brand}")
                     
-                  c1, c2 = st.columns([1, 2])
+                    c1, c2 = st.columns([1, 2])
                     with c1:
                         st.markdown(f"<div class='{insight['style']}'><b>Risk:</b><br>{insight['risk']}</div>", unsafe_allow_html=True)
-                        # UPDATED LABEL HERE
                         st.markdown(f"<span class='rating-text'>📊 Est. Life Rating: {insight['rating']}</span>", unsafe_allow_html=True)
                         
-                        # --- UPDATED PDF BUTTON CALL ---
+                        # --- PDF BUTTON ---
                         m_data = get_product_matrix(insight['style'])
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
                         pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications, matrix_data=m_data)
                         st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", key=f"pdf_btn_{brand}")
 
                     with c2:
-                        st.markdown("**❓ Field Questions:**")
+                        st.markdown("#### ❓ Field Questions:")
                         for q in insight['questions']: st.write(f"✅ *{q}*")
                         
                         st.markdown("#### 🎯 Product Suitability Matrix")
