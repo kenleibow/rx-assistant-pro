@@ -344,23 +344,23 @@ def check_comorbidities(selected_conditions, is_smoker, current_bmi):
         if "Sleep Apnea" in selected_conditions: warnings.append("BUILD RISK: Sleep Apnea with BMI > 35 requires documented CPAP compliance for best rates.")
     if "Diabetes Type 2" in selected_conditions and "Heart Attack (History of)" in selected_conditions: warnings.append("COMORBIDITY ALERT: Diabetes + Heart History is treated very strictly. Expect Table 4 minimum.")
     return warnings
-def get_product_matrix(risk_level, condition_name=""):
-    # Define a balanced range based on the 'color' of the medication/impairment
+ddef get_product_matrix(risk_level):
     if risk_level == "risk-safe":
         return [
             {"Category": "Term (10-30yr)", "Outlook": "💎 Best", "Note": "Preferred Potential"},
             {"Category": "Perm (IUL/UL/WL)", "Outlook": "💎 Best", "Note": "Standard/Preferred"},
             {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred Rates"},
-            {"Category": "DI / LTC", "Outlook": "✅ Good", "Note": "Subject to Morbidity"}
+            {"Category": "Disability (DI)", "Outlook": "✅ Good", "Note": "Subject to Occupation"},
+            {"Category": "Long-Term Care", "Outlook": "💎 Best", "Note": "Standard/Preferred"}
         ]
     
     elif risk_level == "risk-med":
-        # This is the "Balance" zone (e.g., Diabetes, Mild Heart, etc.)
         return [
             {"Category": "Term (10-30yr)", "Outlook": "⚠️ Rated", "Note": "Standard to Table 4"},
             {"Category": "Perm (IUL/UL/WL)", "Outlook": "✅ Good", "Note": "Standard Likely"},
             {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred Available"},
-            {"Category": "DI / LTC", "Outlook": "❌ Poor", "Note": "Likely Decline/Excl."}
+            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Likely Decline/Excl."},
+            {"Category": "Long-Term Care", "Outlook": "⚠️ Rated", "Note": "Standard to Class 2"}
         ]
     
     else: # risk-high
@@ -368,7 +368,8 @@ def get_product_matrix(risk_level, condition_name=""):
             {"Category": "Term (10-30yr)", "Outlook": "❌ Poor", "Note": "Likely Decline/Postpone"},
             {"Category": "Perm (IUL/UL/WL)", "Outlook": "⚠️ Rated", "Note": "Trial App Required"},
             {"Category": "Final Expense", "Outlook": "✅ Good", "Note": "Standard/Graded"},
-            {"Category": "DI / LTC", "Outlook": "❌ Poor", "Note": "Decline"}
+            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Decline"},
+            {"Category": "Long-Term Care", "Outlook": "❌ Poor", "Note": "Decline"}
         ]
 # =========================================================
 # APP TABS (Rx Assistant Pro Edition)
