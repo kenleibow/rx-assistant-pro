@@ -386,44 +386,62 @@ with tab1:
 with tab2:
     col_x, col_y = st.columns([4, 1])
     with col_x: st.markdown("### 💊 Multi-Medication Combo Check")
-    # UPDATED CLEAR: Instead of a callback, we clear the session state directly
+    
+    # Secure Clear Button
     if col_y.button("🔄 Clear List", key="clear_combo_btn"):
         st.session_state.combo_results = None
+        # This keeps us logged in but clears the input area
+        if "multi_input_area" in st.session_state:
+            st.session_state.multi_input_area = ""
         st.rerun()
 
-    multi_input = st.text_area("Paste Med List (comma separated):", key="multi_input_area", placeholder="Metformin, Lisinopril, Plavix")
+    # Define the input area BEFORE the 'if st.button' check
+    multi_input = st.text_area(
+        "Paste Med List (comma separated):", 
+        key="multi_input_area", 
+        placeholder="Metformin, Lisinopril, Plavix"
+    )
     
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
-            meds = [m.strip() for m in multi_input.split(',')]
-            cats = []; valid_meds = []
-            for med in meds:
-                if len(med) < 3: continue
-                try:
-                    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
-                    r = requests.get(url)
-                    if r.status_code == 200:
-                        ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
-                        cat = simple_category_check(ind, med)
-                        cats.append(cat); valid_meds.append(med)
-                except: pass
-            
-            combos = check_med_combinations(cats)
-            # STORE RESULTS IN SESSION STATE SO THEY PERSIST
-            st.session_state.combo_results = {"combos": combos, "meds": valid_meds}
+            with st.spinner("Analyzing combinations..."):
+                meds = [m.strip() for m in multi_input.split(',') if len(m.strip()) > 2]
+                cats = []; valid_meds = []
+                for med in meds:
+                    try:
+                        url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
+                        r = requests.get(url)
+                        if r.status_code == 200:
+                            ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
+                            cat = simple_category_check(ind, med)
+                            cats.append(cat)
+                            valid_meds.append(med)
+                    except: 
+                        pass
+                
+                combos = check_med_combinations(cats)
+                # STORE RESULTS IN SESSION STATE SO THEY PERSIST
+                st.session_state.combo_results = {"combos": combos, "meds": valid_meds}
+        else:
+            st.warning("Please enter at least one medication.")
 
-    # PERSISTENT DISPLAY LOGIC
-    if st.session_state.combo_results:
+    # PERSISTENT DISPLAY LOGIC (Outside the button click)
+    if st.session_state.get("combo_results"):
         res = st.session_state.combo_results
+        st.divider()
         for m in res["meds"]:
             st.write(f"✅ **{m}** identified")
         
         if res["combos"]:
-            for c in res["combos"]: st.error(c)
+            for c in res["combos"]: 
+                st.error(c)
         else:
             st.success("No major negative combinations detected.")
         
-        pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], res["combos"] if res["combos"] else ["No risks found."])
+        # Prepare and show PDF button
+        pdf_report_text = res["combos"] if res["combos"] else ["No major negative combinations detected."]
+        pdf_bytes = create_pdf("Multi-Med Analysis", res["meds"], pdf_report_text)
+        
         st.download_button(
             label="📄 Download Combo Report",
             data=pdf_bytes,
