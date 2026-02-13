@@ -176,7 +176,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Rx Field Assistant v9.4")
 
-st.title("🛡️ Life Insurance Rx Pro Assistant")
+st.title("🛡️ Life Insurance Rx Assistant Pro")
 
 # --- PDF GENERATOR FUNCTION ---
 def create_pdf(title, items_list, analysis_text, fda_text_content=None):
