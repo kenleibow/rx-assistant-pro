@@ -443,7 +443,7 @@ with tab1:
                         
                         # --- PDF BUTTON ---
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
-                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, **risk_level=insight['style']**, fda_text_content=indications)
+                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, risk_level=insight['style'], fda_text_content=indications)
                         st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
 
                     with c2:
@@ -562,7 +562,7 @@ with tab3:
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, **risk_level=risk_lv**)
+            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, risk_level=risk_lv)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
 
 # --- FOOTER ---
