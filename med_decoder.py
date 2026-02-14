@@ -227,30 +227,69 @@ with st.sidebar:
 
 st.title("🛡️ Life Insurance Rx Assistant Pro")
 
-# --- PDF GENERATOR FUNCTION ---
-def create_pdf(title, items_list, analysis_text, fda_text_content=None):
+# --- PDF GENERATOR FUNCTION (REPLACEMENT) ---
+def create_pdf(title, items_list, analysis_text, risk_level=None, fda_text_content=None):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    def clean(text): return text.encode('latin-1', 'replace').decode('latin-1')
+    
+    # This helper function strips emojis/non-latin characters that crash PDFs
+    def clean_text(text):
+        if not text: return ""
+        # Remove the specific emojis used in your matrix
+        safe_text = str(text).replace("💎", "").replace("✅", "").replace("⚠️", "").replace("❌", "")
+        # Remove any other non-standard characters
+        return safe_text.encode('ascii', 'ignore').decode('ascii')
+
+    # Title
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt=clean(f"Rx Assistant - {title}"), ln=True, align='C')
+    pdf.cell(200, 10, txt=clean_text(f"Rx Assistant - {title}"), ln=True, align='C')
     pdf.ln(10)
+
+    # Items Analyzed Section
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt="Items Analyzed:", ln=True, align='L')
-    pdf.set_font("Arial", size=12)
-    for item in items_list: pdf.cell(200, 10, txt=clean(f"- {item}"), ln=True, align='L')
+    pdf.cell(200, 10, txt="Items Analyzed:", ln=True)
+    pdf.set_font("Arial", size=11)
+    for item in items_list:
+        pdf.cell(200, 8, txt=clean_text(f"- {item}"), ln=True)
     pdf.ln(5)
+
+    # Underwriting Analysis Section
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt="Underwriting Analysis:", ln=True, align='L')
-    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="Underwriting Analysis:", ln=True)
+    pdf.set_font("Arial", size=11)
     if isinstance(analysis_text, list):
-        for line in analysis_text: pdf.multi_cell(0, 10, txt=clean(f"- {line}"))
-    else: pdf.multi_cell(0, 10, txt=clean(analysis_text))
+        for line in analysis_text:
+            pdf.multi_cell(0, 8, txt=clean_text(line))
+    else:
+        pdf.multi_cell(0, 8, txt=clean_text(analysis_text))
+
+    # --- PURE TEXT PRODUCT OUTLOOK (STABLE VERSION) ---
+    if risk_level:
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_text_color(230, 81, 0) # Professional Orange
+        pdf.cell(200, 10, txt="PRODUCT SUITABILITY OUTLOOK:", ln=True)
+        pdf.set_text_color(0, 0, 0) # Reset to Black
+        
+        pdf.set_font("Arial", size=10)
+        # Pull the data from your matrix function
+        matrix_data = get_product_matrix(risk_level)
+        for row in matrix_data:
+            # Format: PRODUCT: OUTLOOK -- NOTE
+            cat = clean_text(row['Category']).upper()
+            out = clean_text(row['Outlook']).strip()
+            note = clean_text(row['Note'])
+            pdf.multi_cell(0, 7, txt=f"{cat}: {out} -- {note}")
+            pdf.ln(1)
+
+    # FDA Text (Optional)
     if fda_text_content:
-        pdf.ln(10); pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 10, txt="Official FDA Indications (Excerpt):", ln=True, align='L')
-        pdf.set_font("Arial", size=10); pdf.multi_cell(0, 6, txt=clean(fda_text_content[:2000] + "..."))
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, txt="Official FDA Indications (Excerpt):", ln=True)
+        pdf.set_font("Arial", size=9)
+        pdf.multi_cell(0, 5, txt=clean_text(fda_text_content[:1500] + "..."))
+
     return pdf.output(dest='S').encode('latin-1')
 
 # =========================================================
@@ -404,7 +443,7 @@ with tab1:
                         
                         # --- PDF BUTTON ---
                         report_text = [f"Risk: {insight['risk']}", f"Est. Life Rating: {insight['rating']}"] + [f"Ask: {q}" for q in insight['questions']]
-                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, fda_text_content=indications)
+                        pdf_data = create_pdf(f"Report - {brand}", [brand], report_text, **risk_level=insight['style']**, fda_text_content=indications)
                         st.download_button("📄 Download PDF Report", data=pdf_data, file_name=f"{brand}_report.pdf", mime="application/pdf", key=f"pdf_btn_{brand}")
 
                     with c2:
@@ -523,7 +562,7 @@ with tab3:
                 for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines)
+            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, **risk_level=risk_lv**)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
 
 # --- FOOTER ---
