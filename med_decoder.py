@@ -580,6 +580,18 @@ with st.expander("⚠️ Legal Disclaimer & Liability Information"):
     **4. Liability Waiver:** InsurTech Express and the creators of this tool accept no liability for errors, omissions, inaccuracies, or financial losses resulting from the use of this software. The user assumes all responsibility for verifying information with the appropriate carrier.
     """)
 
-st.markdown("<div class='footer-link'>Powered by <a href='https://www.insurtechexpress.com' target='_blank'>InsurTech Express</a></div>", unsafe_allow_html=True)
-
+# BRANDING & TRADEMARK NOTICE
+st.markdown(
+    """
+    <div style="text-align: center; margin-top: 20px;">
+        <div class='footer-link'>Powered by <a href='https://www.insurtechexpress.com' target='_blank'>InsurTech Express</a></div>
+        <div style="color: #888; font-size: 11px; margin-top: 15px; line-height: 1.6;">
+            <b>Rx Assistant™</b> and <b>Product Suitability Matrix™</b> are trademarks of InsurTech Express. <br>
+            © 2026 ITXMeds.com | All Rights Reserved. <br>
+            <span style="font-style: italic;">Carrier-Agnostic Field Guide for Licensed Professionals.</span>
+        </div>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
