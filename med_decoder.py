@@ -499,17 +499,26 @@ with tab2:
                 st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", key="pdf_multi")
 
 with tab3:
-    st.markdown("### 🩺 Condition & Impairment Search")
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-        sorted_conditions = sorted(list(IMPAIRMENT_DATA.keys()))
-        conditions = st.multiselect("Select Conditions:", sorted_conditions, key="cond_select")
-    with col_i2:
-        st.write("Risk Factors:")
-        is_smoker = st.checkbox("🚬 Tobacco / Nicotine User")
-        st.write(f"⚖️ Current BMI: **{bmi}** ({bmi_category})")
+    st.markdown("### 🩺 Condition & Impairment Search™")
     
-    if conditions or is_smoker or bmi > 30:
+    # Wrap inputs in a form to prevent Chrome from resetting/logging out
+    with st.form("impairment_input_form"):
+        col_i1, col_i2 = st.columns(2)
+        
+        with col_i1:
+            sorted_conditions = sorted(list(IMPAIRMENT_DATA.keys()))
+            conditions = st.multiselect("Select Conditions:", sorted_conditions, key="cond_select")
+        
+        with col_i2:
+            st.write("Risk Factors:")
+            is_smoker = st.checkbox("🚬 Tobacco / Nicotine User")
+            st.write(f"⚖️ Current BMI: **{bmi}** ({bmi_category})")
+        
+        # The 'submit' button that tells Chrome: "Now you can refresh"
+        analyze_btn = st.form_submit_button("Analyze Suitability & Generate Matrix")
+
+    # Change the IF logic to wait for the button click
+    if analyze_btn and (conditions or is_smoker or bmi > 30):
         st.divider()
         st.subheader("📝 Underwriting Analysis")
         warnings = check_comorbidities(conditions, is_smoker, bmi)
@@ -517,13 +526,15 @@ with tab3:
         
         pdf_lines = []
         if warnings: pdf_lines = ["--- WARNINGS ---"] + warnings + ["--- DETAILS ---"]
+        
         if conditions:
+            # We initialize risk_lv here so it's available for the PDF later
+            risk_lv = "risk-med" 
+            
             for cond in conditions:
                 data = IMPAIRMENT_DATA[cond]
                 
-               # --- UNIVERSAL RISK LOGIC ---
-                # Pulls the risk directly from the 'risk' tag in your dictionary
-                # Defaults to 'risk-med' if a tag is missing
+                # --- UNIVERSAL RISK LOGIC ---
                 risk_lv = data.get('risk', 'risk-med') 
                 
                 # Risk Bump: Upgrades risk if they smoke or are obese
@@ -539,30 +550,29 @@ with tab3:
                 ic1, ic2 = st.columns([1, 2])
                 
                 with ic1:
-                    # Base Rating Box
                     st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
-                    st.write("") # Spacer
+                    st.write("") 
 
                 with ic2:
-                    # 1. DISPLAY THE QUESTIONS (This was the missing piece)
                     st.markdown("#### ❓ Field Questions:")
                     if 'qs' in data:
                         for q in data['qs']: 
                             st.write(f"✅ *{q}*")
                     
-                    st.write("") # Small spacer
+                    st.write("") 
 
-                    # 2. DISPLAY THE MATRIX
-                    st.markdown("#### 🎯 Product Suitability Matrix")
+                    st.markdown("#### 🎯 Product Suitability Matrix™")
                     st.caption("💡 *Ratings are estimates based on clinical control and co-morbidities.*")
                     st.table(get_product_matrix(risk_lv))
 
-                # Keep the PDF lines logic behind the scenes
+                # PDF lines logic
                 pdf_lines.append(f"Condition: {cond} | Rating: {data['rating']}")
-                for q in data['qs']: pdf_lines.append(f" - {q}")
+                if 'qs' in data:
+                    for q in data['qs']: pdf_lines.append(f" - {q}")
             
             st.divider()
-            imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, risk_level=risk_lv)
+            # Generate PDF with the final risk_lv determined in the loop
+            imp_pdf = create_pdf("Impairment Analysis Report", conditions, pdf_lines, risk_level=risk_lv)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
 
 # --- FOOTER ---
