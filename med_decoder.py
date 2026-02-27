@@ -206,24 +206,36 @@ COMMON_DRUGS_LIST = [
 ]
 
 # =========================================================
-#  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
+#  GLOBAL STATE: BMI CALCULATOR (SIDEBAR) - BANNER ALIGNED
 # =========================================================
 with st.sidebar:
     st.header("⚖️ BMI Calculator")
     feet = st.number_input("Height (Feet)", 4, 8, 5)
     inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 140)
+    weight = st.number_input("Weight (lbs)", 80, 500, 185) # Updated default to show 'Standard'
+    
     total_inches = (feet * 12) + inches
     bmi = 0.0
-    bmi_category = "Normal"
+    bmi_category = "Standard"
+    
     if total_inches > 0:
         bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
-        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
-        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
-        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
+        
+        # Banner Life Thresholds
+        if bmi < 18.5: 
+            st.info(f"BMI: {bmi} (Underweight)")
+            bmi_category = "Underweight"
+        elif bmi <= 33.0: 
+            # Banner considers up to 33.0 as 'Standard'
+            st.success(f"BMI: {bmi} (Standard Build)")
+            bmi_category = "Standard"
+        else: 
+            # Anything over 33.0 starts hitting table ratings
+            st.error(f"BMI: {bmi} (High Build)")
+            bmi_category = "High Build"
+            
     st.markdown("---")
-    st.caption("Rx Field Assistant v9.4")
+    st.caption("Rx Field Assistant v9.4 | Banner Build Logic")
 
 st.title("🛡️ Life Insurance Rx Assistant Pro")
 
