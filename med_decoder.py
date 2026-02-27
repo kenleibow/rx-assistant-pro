@@ -552,14 +552,16 @@ st.markdown(f"### {cond}")
             # Create the same 1:2 column ratio as Tab 1
 ic1, ic2 = st.columns([1, 2])
             
-with ic1:
-                # Base Rating Box
-                st.markdown(f"<span class='rating-text'>📊 Base Life Rating: {data['rating']}</span>", unsafe_allow_html=True)
-                st.write("") # Spacer
-
-with ic2:
-                    # 1. DISPLAY THE QUESTIONS (This was the missing piece)
-                    st.markdown("#### ❓ Field Questions:")
+st.markdown(f"### {cond}")
+                
+                ic1, ic2 = st.columns([1, 2])
+                with ic1:
+                    st.markdown(f"**Rating:** {data.get('rating', 'TBD')}")
+                    st.caption(f"Risk Level: {risk_lv}")
+                with ic2:
+                    st.info(data.get('details', 'No additional details.'))
+                
+                st.markdown("---")
                     if 'qs' in data:
                         for q in data['qs']: 
                             st.write(f"✅ *{q}*")
