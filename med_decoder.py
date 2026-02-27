@@ -550,7 +550,7 @@ if is_smoker or bmi > 33.0:
 st.markdown(f"### {cond}")
             
             # Create the same 1:2 column ratio as Tab 1
-            ic1, ic2 = st.columns([1, 2])
+ic1, ic2 = st.columns([1, 2])
             
             with ic1:
                 # Base Rating Box
