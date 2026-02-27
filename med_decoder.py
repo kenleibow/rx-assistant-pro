@@ -117,21 +117,28 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Mobile Loosened / Laptop Tightened) ---
+# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
 css_style = """<style>
-/* 1. 📱 IPHONE SCROLL & TOUCH FIX */
-html, body, .main {
-    overflow-y: auto !important;
+/* 1. 📱 GLOBAL MOBILE FIX: Forces elastic scrolling */
+html, body, [data-testid="stAppViewContainer"] {
+    overflow: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-/* 📱 Mobile Specific: Huge runway for iPhone menus */
-@media (max-width: 768px) {
+/* 2. 📱 MOBILE & IPAD SPECIFIC (Fixes the scrolling 'lock') */
+@media (max-width: 1024px) {
     .main .block-container {
-        padding-bottom: 30rem !important; 
+        padding-bottom: 20rem !important; 
         overflow: visible !important;
-        touch-action: auto !important;
+        touch-action: pan-y !important; /* Forces vertical scrolling only */
     }
+    
+    /* Prevents the sidebar from 'trapping' the scroll */
+    [data-testid="stSidebar"] {
+        position: absolute !important;
+        height: auto !important;
+    }
+
     .bmi-pointer { 
         display: block !important;
         position: fixed !important;
@@ -139,13 +146,21 @@ html, body, .main {
         left: 10px !important;
         font-size: 11px !important; 
         padding: 4px 8px !important;
+        background-color: #0066cc;
+        color: white;
         z-index: 999999 !important;
+        border-radius: 4px;
         pointer-events: none !important; 
+    }
+    
+    /* Makes buttons easier to hit on a smartphone */
+    .stButton>button {
+        height: 3.5em !important;
     }
 }
 
-/* 💻 Laptop Specific: Tight footer, no extra white space */
-@media (min-width: 769px) {
+/* 3. 💻 LAPTOP SPECIFIC: Tightened UI */
+@media (min-width: 1025px) {
     .main .block-container {
         padding-bottom: 3rem !important;
     }
@@ -165,6 +180,11 @@ html, body, .main {
     }
 }
 
+/* 4. DESIGN TWEAKS FOR MATRIX */
+.stTable {
+    font-size: 12px !important;
+}
+</style>"""
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
