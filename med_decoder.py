@@ -117,8 +117,9 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Cleaned for Python Syntax) ---
-css_style = r"""<style>
+# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
+css_style = """
+<style>
 /* 1. Global Mobile Fix */
 html, body, [data-testid="stAppViewContainer"] {
     overflow: auto !important;
@@ -149,7 +150,7 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 /* 4. Rating Text and Matrix Tweaks */
-.rating_text_style { 
+.rating-text { 
     font-size: 0.95rem !important; 
     font-weight: 600 !important; 
     color: #E65100 !important; 
@@ -160,8 +161,10 @@ html, body, [data-testid="stAppViewContainer"] {
 .stTable { 
     font-size: 12px !important; 
 }
-</style>"""
+</style>
+"""
 
+# Apply the CSS to the app
 st.markdown(css_style, unsafe_allow_html=True)
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
