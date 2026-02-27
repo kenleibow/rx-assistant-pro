@@ -412,20 +412,20 @@ def get_product_matrix(risk_level):
     
     elif risk_level == "risk-med":
         return [
-            {"Category": "Term (10-30yr)", "Outlook": "⚠️ Rated", "Note": "Standard to Table 4"},
+            {"Category": "Term (10-30yr)", "Outlook": "✅ Good", "Note": "Standard Likely"},
             {"Category": "Perm (IUL/UL/WL)", "Outlook": "✅ Good", "Note": "Standard Likely"},
             {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred Available"},
-            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Likely Decline/Excl."},
-            {"Category": "Long-Term Care", "Outlook": "⚠️ Rated", "Note": "Standard to Class 2"}
+            {"Category": "Disability (DI)", "Outlook": "⚠️ Rated", "Note": "Possible Exclusions"},
+            {"Category": "Long-Term Care", "Outlook": "✅ Good", "Note": "Standard Available"}
         ]
     
-    else: # risk-high
+    else: # risk-high (BMI > 33 or Smoking)
         return [
-            {"Category": "Term (10-30yr)", "Outlook": "❌ Poor", "Note": "Likely Decline/Postpone"},
-            {"Category": "Perm (IUL/UL/WL)", "Outlook": "⚠️ Rated", "Note": "Trial App Required"},
-            {"Category": "Final Expense", "Outlook": "✅ Good", "Note": "Standard/Graded"},
-            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Decline"},
-            {"Category": "Long-Term Care", "Outlook": "❌ Poor", "Note": "Decline"}
+            {"Category": "Term (10-30yr)", "Outlook": "⚠️ Rated", "Note": "Table 2 to Table 4"},
+            {"Category": "Perm (IUL/UL/WL)", "Outlook": "✅ Good", "Note": "Standard to Table 2"}, # More lenient!
+            {"Category": "Final Expense", "Outlook": "💎 Best", "Note": "Preferred Available"},
+            {"Category": "Disability (DI)", "Outlook": "❌ Poor", "Note": "Likely Decline"},
+            {"Category": "Long-Term Care", "Outlook": "⚠️ Rated", "Note": "Standard to Class 2"}
         ]
 # =========================================================
 # APP TABS (Rx Assistant Pro Edition)
@@ -537,16 +537,15 @@ with tab3:
                 data = IMPAIRMENT_DATA[cond]
                 
                # --- UNIVERSAL RISK LOGIC ---
-                # Pulls the risk directly from the 'risk' tag in your dictionary
-                # Defaults to 'risk-med' if a tag is missing
-                risk_lv = data.get('risk', 'risk-med') 
-                
-                # Risk Bump: Upgrades risk if they smoke or are obese
-                if is_smoker or bmi > 35:
-                    if risk_lv == "risk-safe": 
-                        risk_lv = "risk-med"
-                    elif risk_lv == "risk-med": 
-                        risk_lv = "risk-high"
+# Pulls the risk directly from the 'risk' tag in your dictionary
+risk_lv = data.get('risk', 'risk-med') 
+
+# Risk Bump: Banner Aligned (BMI 33.0)
+if is_smoker or bmi > 33.0:
+    if risk_lv == "risk-safe": 
+        risk_lv = "risk-med"
+    elif risk_lv == "risk-med": 
+        risk_lv = "risk-high"
 
                 st.markdown(f"### {cond}")
                 
