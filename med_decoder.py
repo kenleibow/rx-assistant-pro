@@ -118,55 +118,34 @@ def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
 # --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
+# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
 css_style = """<style>
-/* 1. 📱 GLOBAL MOBILE FIX */
+/* 1. GLOBAL MOBILE FIX */
 html, body, [data-testid="stAppViewContainer"] {
     overflow: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-/* 2. 📱 MOBILE & IPAD SPECIFIC */
+/* 2. MOBILE & IPAD SPECIFIC */
 @media (max-width: 1024px) {
     .main .block-container {
         padding-bottom: 20rem !important; 
         overflow: visible !important;
         touch-action: pan-y !important;
     }
-    
     [data-testid="stSidebar"] {
         position: absolute !important;
         height: auto !important;
     }
-
-    .bmi-pointer { 
-        display: block !important;
-        position: fixed !important;
-        top: 10px !important; 
-        left: 10px !important;
-        font-size: 11px !important; 
-        padding: 4px 8px !important;
-        background-color: #0066cc;
-        color: white;
-        z-index: 999999 !important;
-        border-radius: 4px;
-        pointer-events: none !important; 
-    }
-    
     .stButton>button {
         height: 3.5em !important;
     }
 }
 
-/* 3. 💻 LAPTOP SPECIFIC */
+/* 3. LAPTOP SPECIFIC */
 @media (min-width: 1025px) {
     .main .block-container {
         padding-bottom: 3rem !important;
-    }
-    .bmi-pointer { 
-        position: fixed; top: 60px; left: 20px; z-index: 99999; 
-        background-color: #0066cc; color: white; padding: 5px 10px; 
-        border-radius: 5px; font-weight: bold; font-size: 14px; 
-        pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
     }
 }
 
@@ -184,7 +163,7 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 </style>"""
 
-# Apply the CSS to the app
+# IMPORTANT: This line MUST come after the quotes are closed
 st.markdown(css_style, unsafe_allow_html=True)
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
