@@ -209,10 +209,10 @@ COMMON_DRUGS_LIST = [
 #  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
 # =========================================================
 with st.sidebar:
-    st.header("⚖️ BMI Calculator")
+    st.header("⚖️ BMI & Build Assistant™")
     feet = st.number_input("Height (Feet)", 4, 8, 5)
     inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 165) # Adjusted default to 165
+    weight = st.number_input("Weight (lbs)", 80, 500, 165)
     
     total_inches = (feet * 12) + inches
     bmi = 0.0
@@ -221,18 +221,24 @@ with st.sidebar:
     if total_inches > 0:
         bmi = round((weight / (total_inches ** 2)) * 703, 1)
         
-        # --- CARRIER-FRIENDLY THRESHOLDS ---
+        # --- CARRIER-ALIGNED THRESHOLDS (Based on Banner/Prudential Tables) ---
         if bmi < 18.5: 
             st.info(f"BMI: {bmi} (Underweight)")
             bmi_category = "Underweight"
-        elif bmi < 27.5: # Most carriers allow up to 27.4 for 'Normal' build
-            st.success(f"BMI: {bmi} (Normal)")
+            
+        elif bmi < 30.0: # Preferred / Preferred Plus range
+            st.success(f"BMI: {bmi} (Preferred Outlook)")
             bmi_category = "Normal"
-        elif bmi < 32.5: # 27.5 to 32.4 is Standard/Overweight
-            st.warning(f"BMI: {bmi} (Overweight)")
+            
+        elif bmi < 33.0: # Standard Plus / Standard range
+            st.warning(f"BMI: {bmi} (Standard Outlook)")
             bmi_category = "Overweight"
-        else: 
-            st.error(f"BMI: {bmi} (Obese)")
+            
+        elif bmi < 40.0: # Substandard / Table Rated
+            st.error(f"BMI: {bmi} (Obese / Rated)")
+            bmi_category = "Obese"
+        else:
+            st.error(f"BMI: {bmi} (Decline Risk)")
             bmi_category = "Obese"
 
     st.markdown("---")
