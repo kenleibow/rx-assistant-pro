@@ -119,13 +119,13 @@ def clear_multi(): st.session_state.multi_input = ""
 # --- CSS STYLING ---
 # --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
 css_style = """<style>
-/* 1. 📱 GLOBAL MOBILE FIX: Forces elastic scrolling */
+/* 1. 📱 GLOBAL MOBILE FIX */
 html, body, [data-testid="stAppViewContainer"] {
     overflow: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-/* 2. 📱 MOBILE & IPAD SPECIFIC (Fixes the scrolling 'lock') */
+/* 2. 📱 MOBILE & IPAD SPECIFIC */
 @media (max-width: 1024px) {
     .main .block-container {
         padding-bottom: 20rem !important; 
@@ -157,7 +157,7 @@ html, body, [data-testid="stAppViewContainer"] {
     }
 }
 
-/* 3. 💻 LAPTOP SPECIFIC: Tightened UI */
+/* 3. 💻 LAPTOP SPECIFIC */
 @media (min-width: 1025px) {
     .main .block-container {
         padding-bottom: 3rem !important;
@@ -170,10 +170,7 @@ html, body, [data-testid="stAppViewContainer"] {
     }
 }
 
-# --- ENSURE ALL CSS IS INSIDE THE TRIPLE QUOTES ---
-# Check line 170-186 and make sure it looks EXACTLY like this:
-
-/* 4. 📝 RATING TEXT & MATRIX TWEAKS */
+/* 4. RATING TEXT & MATRIX TWEAKS */
 .rating-text { 
     font-size: 0.95rem !important; 
     font-weight: 600 !important; 
@@ -185,7 +182,7 @@ html, body, [data-testid="stAppViewContainer"] {
 .stTable { 
     font-size: 12px !important; 
 }
-</style>""" # <--- THIS MUST BE THE ONLY TRIPLE QUOTE AT THE END
+</style>"""
 
 # Apply the CSS to the app
 st.markdown(css_style, unsafe_allow_html=True)
