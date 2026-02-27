@@ -170,6 +170,9 @@ html, body, [data-testid="stAppViewContainer"] {
     }
 }
 
+# --- ENSURE ALL CSS IS INSIDE THE TRIPLE QUOTES ---
+# Check line 170-186 and make sure it looks EXACTLY like this:
+
 /* 4. 📝 RATING TEXT & MATRIX TWEAKS */
 .rating-text { 
     font-size: 0.95rem !important; 
@@ -178,17 +181,14 @@ html, body, [data-testid="stAppViewContainer"] {
     display: block; 
     margin-top: 2px; 
 }
-.stTable { font-size: 12px !important; }
-</style>"""  # <--- MAKE SURE THESE QUOTES ARE HERE, NOT ABOVE!
 
-# Then make sure the CSS is actually applied to the page:
-st.markdown(css_style, unsafe_allow_html=True)
-
-/* 4. DESIGN TWEAKS FOR MATRIX */
-.stTable {
-    font-size: 12px !important;
+.stTable { 
+    font-size: 12px !important; 
 }
-</style>"""
+</style>""" # <--- THIS MUST BE THE ONLY TRIPLE QUOTE AT THE END
+
+# Apply the CSS to the app
+st.markdown(css_style, unsafe_allow_html=True)
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
