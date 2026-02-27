@@ -547,7 +547,7 @@ if is_smoker or bmi > 33.0:
     elif risk_lv == "risk-med": 
         risk_lv = "risk-high"
 
-    st.markdown(f"### {cond}")
+st.markdown(f"### {cond}")
                 
                 # Create the same 1:2 column ratio as Tab 1
                 ic1, ic2 = st.columns([1, 2])
