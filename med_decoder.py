@@ -117,16 +117,15 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
-# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
-css_style = """<style>
-/* 1. GLOBAL MOBILE FIX */
+# --- CSS STYLING (Cleaned for Python Syntax) ---
+css_style = r"""<style>
+/* 1. Global Mobile Fix */
 html, body, [data-testid="stAppViewContainer"] {
     overflow: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
-/* 2. MOBILE & IPAD SPECIFIC */
+/* 2. Mobile and iPad Specific */
 @media (max-width: 1024px) {
     .main .block-container {
         padding-bottom: 20rem !important; 
@@ -142,15 +141,15 @@ html, body, [data-testid="stAppViewContainer"] {
     }
 }
 
-/* 3. LAPTOP SPECIFIC */
+/* 3. Laptop Specific */
 @media (min-width: 1025px) {
     .main .block-container {
         padding-bottom: 3rem !important;
     }
 }
 
-/* 4. RATING TEXT & MATRIX TWEAKS */
-.rating-text { 
+/* 4. Rating Text and Matrix Tweaks */
+.rating_text_style { 
     font-size: 0.95rem !important; 
     font-weight: 600 !important; 
     color: #E65100 !important; 
@@ -163,7 +162,6 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 </style>"""
 
-# IMPORTANT: This line MUST come after the quotes are closed
 st.markdown(css_style, unsafe_allow_html=True)
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
