@@ -117,46 +117,37 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- CSS STYLING (Banner-Aligned & Mobile-Fluid) ---
 # --- DIRECT CSS INJECTION ---
-st.markdown("""
-<style>
-    /* 1. Global Mobile Fix */
-    html, body, [data-testid="stAppViewContainer"] {
-        overflow: auto !important;
-        -webkit-overflow-scrolling: touch !important;
+st.markdown("""<style>
+html, body, [data-testid="stAppViewContainer"] {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+@media (max-width: 1024px) {
+    .main .block-container {
+        padding-bottom: 20rem !important; 
+        overflow: visible !important;
+        touch-action: pan-y !important;
     }
-
-    /* 2. Mobile and iPad Specific */
-    @media (max-width: 1024px) {
-        .main .block-container {
-            padding-bottom: 20rem !important; 
-            overflow: visible !important;
-            touch-action: pan-y !important;
-        }
-        [data-testid="stSidebar"] {
-            position: absolute !important;
-            height: auto !important;
-        }
-        .stButton>button {
-            height: 3.5em !important;
-        }
+    [data-testid="stSidebar"] {
+        position: absolute !important;
+        height: auto !important;
     }
-
-    /* 3. Rating Text and Matrix Tweaks */
-    .rating-text { 
-        font-size: 0.95rem !important; 
-        font-weight: 600 !important; 
-        color: #E65100 !important; 
-        display: block; 
-        margin-top: 2px; 
+    .stButton>button {
+        height: 3.5em !important;
     }
-
-    .stTable { 
-        font-size: 12px !important; 
-    }
-</style>
-""", unsafe_allow_html=True)
+}
+.rating-text { 
+    font-size: 0.95rem !important; 
+    font-weight: 600 !important; 
+    color: #E65100 !important; 
+    display: block; 
+    margin-top: 2px; 
+}
+.stTable { 
+    font-size: 12px !important; 
+}
+</style>""", unsafe_allow_html=True)
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
