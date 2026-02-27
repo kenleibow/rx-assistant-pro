@@ -179,7 +179,10 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 2px; 
 }
 .stTable { font-size: 12px !important; }
-</style>"""
+</style>"""  # <--- MAKE SURE THESE QUOTES ARE HERE, NOT ABOVE!
+
+# Then make sure the CSS is actually applied to the page:
+st.markdown(css_style, unsafe_allow_html=True)
 
 /* 4. DESIGN TWEAKS FOR MATRIX */
 .stTable {
