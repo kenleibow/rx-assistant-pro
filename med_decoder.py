@@ -212,7 +212,7 @@ with st.sidebar:
     st.header("⚖️ BMI Calculator")
     feet = st.number_input("Height (Feet)", 4, 8, 5)
     inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 140)
+    weight = st.number_input("Weight (lbs)", 80, 500, 165) # Restored to 165 default
     
     total_inches = (feet * 12) + inches
     bmi = 0.0
@@ -225,15 +225,15 @@ with st.sidebar:
             st.info(f"BMI: {bmi} (Underweight)")
             bmi_category = "Underweight"
         elif bmi < 27.5: 
-            # Normal range extended slightly for insurance standards
+            # Normal range (Green)
             st.success(f"BMI: {bmi} (Normal)")
             bmi_category = "Normal"
         elif bmi <= 33.0: 
-            # Yellow 'Overweight' now covers up to the Banner Standard limit
+            # Overweight range (Yellow) - Now stays Yellow up to 33.0
             st.warning(f"BMI: {bmi} (Overweight)")
             bmi_category = "Overweight"
         else: 
-            # Red 'Obese' only triggers AFTER the 33.0 Standard limit
+            # Obese range (Red) - Only triggers above 33.0
             st.error(f"BMI: {bmi} (Obese)")
             bmi_category = "Obese"
             
