@@ -212,18 +212,32 @@ with st.sidebar:
     st.header("⚖️ BMI Calculator")
     feet = st.number_input("Height (Feet)", 4, 8, 5)
     inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 140)
+    weight = st.number_input("Weight (lbs)", 80, 500, 165) # Adjusted default to 165
+    
     total_inches = (feet * 12) + inches
     bmi = 0.0
     bmi_category = "Normal"
+    
     if total_inches > 0:
         bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
-        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
-        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
-        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
+        
+        # --- CARRIER-FRIENDLY THRESHOLDS ---
+        if bmi < 18.5: 
+            st.info(f"BMI: {bmi} (Underweight)")
+            bmi_category = "Underweight"
+        elif bmi < 27.5: # Most carriers allow up to 27.4 for 'Normal' build
+            st.success(f"BMI: {bmi} (Normal)")
+            bmi_category = "Normal"
+        elif bmi < 32.5: # 27.5 to 32.4 is Standard/Overweight
+            st.warning(f"BMI: {bmi} (Overweight)")
+            bmi_category = "Overweight"
+        else: 
+            st.error(f"BMI: {bmi} (Obese)")
+            bmi_category = "Obese"
+
     st.markdown("---")
-    st.caption("Rx Field Assistant v9.4")
+    st.caption("Rx Assistant Pro™ v9.5")
+    st.caption("Carrier-Agnostic Field Guide")
 
 st.title("🛡️ Life Insurance Rx Assistant Pro")
 
