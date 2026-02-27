@@ -117,41 +117,60 @@ def clear_single(): st.session_state.single_input = ""
 def clear_multi(): st.session_state.multi_input = ""
 
 # --- CSS STYLING ---
-# --- DIRECT CSS INJECTION ---
-st.markdown("""<style>
-html, body, [data-testid="stAppViewContainer"] {
-    overflow: auto !important;
+# --- CSS STYLING (Mobile Loosened / Laptop Tightened) ---
+css_style = """<style>
+/* 1. 📱 IPHONE SCROLL & TOUCH FIX */
+html, body, .main {
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
 }
-@media (max-width: 1024px) {
+
+/* 📱 Mobile Specific: Huge runway for iPhone menus */
+@media (max-width: 768px) {
     .main .block-container {
-        padding-bottom: 20rem !important; 
+        padding-bottom: 30rem !important; 
         overflow: visible !important;
-        touch-action: pan-y !important;
+        touch-action: auto !important;
     }
-    [data-testid="stSidebar"] {
-        position: absolute !important;
-        height: auto !important;
-    }
-    .stButton>button {
-        height: 3.5em !important;
+    .bmi-pointer { 
+        display: block !important;
+        position: fixed !important;
+        top: 10px !important; 
+        left: 10px !important;
+        font-size: 11px !important; 
+        padding: 4px 8px !important;
+        z-index: 999999 !important;
+        pointer-events: none !important; 
     }
 }
-.rating-text { 
-    font-size: 0.95rem !important; 
-    font-weight: 600 !important; 
-    color: #E65100 !important; 
-    display: block; 
-    margin-top: 2px; 
+
+/* 💻 Laptop Specific: Tight footer, no extra white space */
+@media (min-width: 769px) {
+    .main .block-container {
+        padding-bottom: 3rem !important;
+    }
+    .bmi-pointer { 
+        position: fixed; 
+        top: 60px; 
+        left: 20px; 
+        z-index: 99999; 
+        background-color: #0066cc; 
+        color: white; 
+        padding: 5px 10px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        font-size: 14px; 
+        pointer-events: none; 
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+    }
 }
-.stTable { 
-    font-size: 12px !important; 
-}
-</style>""", unsafe_allow_html=True)
+
 /* 2. RISK & RATING STYLES */
 .risk-high { background-color: #ffcccc; padding: 10px; border-radius: 5px; color: #8a0000; border-left: 5px solid #cc0000; }
 .risk-med { background-color: #fff4cc; padding: 10px; border-radius: 5px; color: #664d00; border-left: 5px solid #ffcc00; }
-           
+.risk-safe { background-color: #e6fffa; padding: 10px; border-radius: 5px; color: #004d40; border-left: 5px solid #00bfa5; }
+.rating-text { font-size: 0.95rem !important; font-weight: 600 !important; color: #E65100 !important; display: block; margin-top: 2px; }
+
 /* 3. TABLE & BUTTONS */
 div[data-testid="stTable"] {
     overflow-x: auto !important;
@@ -190,41 +209,21 @@ COMMON_DRUGS_LIST = [
 #  GLOBAL STATE: BMI CALCULATOR (SIDEBAR)
 # =========================================================
 with st.sidebar:
-    st.header("⚖️ BMI & Build Assistant™")
+    st.header("⚖️ BMI Calculator")
     feet = st.number_input("Height (Feet)", 4, 8, 5)
     inches = st.number_input("Height (Inches)", 0, 11, 9)
-    weight = st.number_input("Weight (lbs)", 80, 500, 165)
-    
+    weight = st.number_input("Weight (lbs)", 80, 500, 140)
     total_inches = (feet * 12) + inches
     bmi = 0.0
     bmi_category = "Normal"
-    
     if total_inches > 0:
         bmi = round((weight / (total_inches ** 2)) * 703, 1)
-        
-        # --- CARRIER-ALIGNED THRESHOLDS (Based on Banner/Prudential Tables) ---
-        if bmi < 18.5: 
-            st.info(f"BMI: {bmi} (Underweight)")
-            bmi_category = "Underweight"
-            
-        elif bmi < 30.0: # Preferred / Preferred Plus range
-            st.success(f"BMI: {bmi} (Preferred Outlook)")
-            bmi_category = "Normal"
-            
-        elif bmi < 33.0: # Standard Plus / Standard range
-            st.warning(f"BMI: {bmi} (Standard Outlook)")
-            bmi_category = "Overweight"
-            
-        elif bmi < 40.0: # Substandard / Table Rated
-            st.error(f"BMI: {bmi} (Obese / Rated)")
-            bmi_category = "Obese"
-        else:
-            st.error(f"BMI: {bmi} (Decline Risk)")
-            bmi_category = "Obese"
-
+        if bmi < 18.5: st.info(f"BMI: {bmi} (Underweight)"); bmi_category = "Underweight"
+        elif bmi < 25: st.success(f"BMI: {bmi} (Normal)"); bmi_category = "Normal"
+        elif bmi < 30: st.warning(f"BMI: {bmi} (Overweight)"); bmi_category = "Overweight"
+        else: st.error(f"BMI: {bmi} (Obese)"); bmi_category = "Obese"
     st.markdown("---")
-    st.caption("Rx Assistant Pro™ v9.5")
-    st.caption("Carrier-Agnostic Field Guide")
+    st.caption("Rx Field Assistant v9.4")
 
 st.title("🛡️ Life Insurance Rx Assistant Pro")
 
@@ -565,6 +564,7 @@ with tab3:
             st.divider()
             imp_pdf = create_pdf("Impairment Analysis", conditions, pdf_lines, risk_level=risk_lv)
             st.download_button("📄 Download Impairment Report", data=imp_pdf, file_name="imp_report.pdf", key="pdf_imp")
+
 # --- FOOTER ---
 st.markdown("---")
 
@@ -594,4 +594,3 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-
