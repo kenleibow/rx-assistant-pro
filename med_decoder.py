@@ -130,10 +130,9 @@ html, body, [data-testid="stAppViewContainer"] {
     .main .block-container {
         padding-bottom: 20rem !important; 
         overflow: visible !important;
-        touch-action: pan-y !important; /* Forces vertical scrolling only */
+        touch-action: pan-y !important;
     }
     
-    /* Prevents the sidebar from 'trapping' the scroll */
     [data-testid="stSidebar"] {
         position: absolute !important;
         height: auto !important;
@@ -153,7 +152,6 @@ html, body, [data-testid="stAppViewContainer"] {
         pointer-events: none !important; 
     }
     
-    /* Makes buttons easier to hit on a smartphone */
     .stButton>button {
         height: 3.5em !important;
     }
@@ -165,20 +163,23 @@ html, body, [data-testid="stAppViewContainer"] {
         padding-bottom: 3rem !important;
     }
     .bmi-pointer { 
-        position: fixed; 
-        top: 60px; 
-        left: 20px; 
-        z-index: 99999; 
-        background-color: #0066cc; 
-        color: white; 
-        padding: 5px 10px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        font-size: 14px; 
-        pointer-events: none; 
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
+        position: fixed; top: 60px; left: 20px; z-index: 99999; 
+        background-color: #0066cc; color: white; padding: 5px 10px; 
+        border-radius: 5px; font-weight: bold; font-size: 14px; 
+        pointer-events: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); 
     }
 }
+
+/* 4. 📝 RATING TEXT & MATRIX TWEAKS */
+.rating-text { 
+    font-size: 0.95rem !important; 
+    font-weight: 600 !important; 
+    color: #E65100 !important; 
+    display: block; 
+    margin-top: 2px; 
+}
+.stTable { font-size: 12px !important; }
+</style>"""
 
 /* 4. DESIGN TWEAKS FOR MATRIX */
 .stTable {
