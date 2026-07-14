@@ -428,6 +428,21 @@ def get_product_matrix(risk_level):
             {"Category": "Long-Term Care", "Outlook": "⚠️ Rated", "Note": "Standard to Class 2"}
         ]
 # =========================================================
+# FDA LOOKUPS (cached so repeat searches skip the API)
+# =========================================================
+@st.cache_data(show_spinner=False, ttl=3600)
+def fetch_fda_single_drug(drug_name):
+    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"+openfda.generic_name:"{drug_name}"&limit=1'
+    r = requests.get(url, timeout=10)
+    return r.status_code, (r.json() if r.status_code == 200 else None)
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def fetch_fda_multi_drug(drug_name):
+    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"&limit=1'
+    r = requests.get(url, timeout=10)
+    return r.status_code, (r.json() if r.status_code == 200 else None)
+
+# =========================================================
 # APP TABS (Rx Assistant Pro Edition)
 # =========================================================
 tab1, tab2, tab3 = st.tabs(["🔍 Drug Decoder (FDA)", "💊 Multi-Med Combo Check", "🩺 Impairment Analyst (Conditions)"])
@@ -441,10 +456,9 @@ with tab1:
     if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
-                url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
-                r = requests.get(url, timeout=10)
-                if r.status_code == 200:
-                    data = r.json()['results'][0]
+                status_code, payload = fetch_fda_single_drug(single_drug)
+                if status_code == 200:
+                    data = payload['results'][0]
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
                     indications = data.get('indications_and_usage', ["No text found"])[0]
                     insight = analyze_single_med(indications, single_drug)
@@ -497,10 +511,9 @@ with tab2:
             for med in meds:
                 if len(med) < 3: continue
                 try:
-                    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
-                    r = requests.get(url, timeout=10)
-                    if r.status_code == 200:
-                        ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
+                    status_code, payload = fetch_fda_multi_drug(med)
+                    if status_code == 200:
+                        ind = payload['results'][0].get('indications_and_usage', [""])[0]
                         cat = simple_category_check(ind, med)
                         cats.append(cat); valid_meds.append(med)
                         st.write(f"✅ **{med}** identified as *{cat}*")
