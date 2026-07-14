@@ -1,0 +1,73 @@
+# =========================================================
+#  DATA: COMMON DRUG LIST
+# =========================================================
+COMMON_DRUGS_LIST = [
+    "Metformin", "Lisinopril", "Atorvastatin", "Levothyroxine", "Amlodipine",
+    "Metoprolol", "Omeprazole", "Losartan", "Gabapentin", "Hydrochlorothiazide",
+    "Sertraline", "Simvastatin", "Montelukast", "Escitalopram", "Furosemide",
+    "Pantoprazole", "Trazodone", "Fluticasone", "Tramadol", "Duloxetine",
+    "Prednisone", "Tamsulosin", "Rosuvastatin", "Bupropion", "Meloxicam",
+    "Aspirin", "Clopidogrel", "Plavix", "Glipizide", "Benicar", "Januvia",
+    "Humira", "Enbrel", "Eliquis", "Xarelto", "Pradaxa", "Entresto",
+    "Farxiga", "Jardiance", "Ozempic", "Wegovy", "Mounjaro", "Trulicity",
+    "Synthroid", "Crestor", "Lipitor", "Nexium", "Advair", "Symbicort",
+    "Ventolin", "ProAir", "Spiriva", "Lyrica", "Cymbalta", "Effexor",
+    "Lexapro", "Zoloft", "Prozac", "Wellbutrin", "Abilify", "Seroquel",
+    "Xanax", "Klonopin", "Valium", "Ativan", "Ambien", "Lunesta",
+    "Viagra", "Cialis", "Levitra", "Allopurinol", "Colchicine", "Warfarin",
+    "Coumadin", "Digoxin", "Amiodarone", "Flecanide", "Sotalol", "Nitroglycerin",
+    "Ranolazine", "Imdur", "Bisoprolol", "Carvedilol", "Labetalol"
+]
+
+# =========================================================
+#  IMPAIRMENT DATA (Tagged for Universal Logic)
+# =========================================================
+IMPAIRMENT_DATA = {
+    "Hypertension (High BP)": {"qs": ["Date of last reading?", "Is it controlled?", "Med change <12 mos?"], "rating": "Preferred (Controlled) to Table 2.", "risk": "risk-safe"},
+    "Heart Attack (History of)": {"qs": ["Date of event?", "Current EF%?", "Recent stress test?"], "rating": "Postpone (0-6mos). Table 2 to 4 (After 1yr).", "risk": "risk-high"},
+    "Atrial Fibrillation (AFib)": {"qs": ["Chronic or Paroxysmal?", "Blood thinners?", "Date last episode?"], "rating": "Standard (Infrequent) to Table 2.", "risk": "risk-med"},
+    "Stent Placement": {"qs": ["Date inserted?", "How many stents?", "Any chest pain since?"], "rating": "Table 2 (Single) to Table 4 (Multiple).", "risk": "risk-med"},
+    "Coronary Artery Disease": {"qs": ["Date of diagnosis?", "Any bypass surgery?", "Current symptoms?"], "rating": "Table 2 to Decline.", "risk": "risk-high"},
+    "Stroke / TIA": {"qs": ["Date of event?", "Any residual weakness?", "Carotid ultrasound results?"], "rating": "Postpone (0-1yr). Table 4 to Decline.", "risk": "risk-high"},
+    "Pacemaker": {"qs": ["Date implanted?", "Underlying condition?", "Battery check date?"], "rating": "Standard (Sinus Node) to Table 2.", "risk": "risk-med"},
+    "Heart Murmur": {"qs": ["Functional or organic?", "Recent echocardiogram?", "Valve involvement?"], "rating": "Preferred (Functional) to Table 4.", "risk": "risk-med"},
+    "Aortic Stenosis": {"qs": ["Mild, Moderate or Severe?", "Valve replacement planned?", "Symptoms?"], "rating": "Mild/Stable = Standard. Severe = Decline.", "risk": "risk-med"},
+    "Peripheral Vascular Disease": {"qs": ["Do you have pain walking?", "Any surgery?", "Tobacco use?"], "rating": "Table 4 to Decline.", "risk": "risk-high"},
+    "Diabetes Type 2": {"qs": ["Current A1C?", "Age of diagnosis?", "Insulin use?", "Neuropathy?"], "rating": "Standard (A1C < 7.0) to Table 2. (Table 4 if Insulin).", "risk": "risk-med"},
+    "Diabetes Type 1": {"qs": ["Age diagnosed?", "Insulin pump?", "Kidney issues?", "A1C average?"], "rating": "Table 4 to Table 8. Rarely Standard.", "risk": "risk-high"},
+    "Hypothyroidism": {"qs": ["Date diagnosed?", "TSH levels stable?", "Taking Synthroid?"], "rating": "Preferred Possible.", "risk": "risk-safe"},
+    "Hyperthyroidism / Graves": {"qs": ["Date diagnosed?", "Treatment type (Radioactive iodine)?", "Current TSH?"], "rating": "Standard (Stable > 1yr).", "risk": "risk-safe"},
+    "Hashimoto's": {"qs": ["TSH levels?", "Any goiter or nodules?", "Medications?"], "rating": "Preferred to Standard.", "risk": "risk-safe"},
+    "Sleep Apnea": {"qs": ["CPAP use nightly?", "Compliance logs?", "Last sleep study?"], "rating": "Standard (Compliant). Table 2 to Decline (No CPAP).", "risk": "risk-med"},
+    "COPD / Emphysema": {"qs": ["Oxygen use?", "Hospitalizations?", "Tobacco use?"], "rating": "Table 2 (Mild) to Decline (Severe/Smoker).", "risk": "risk-high"},
+    "Asthma": {"qs": ["Inhaler frequency?", "Oral steroids (Prednisone)?", "Hospital visits?"], "rating": "Standard (Mild) to Table 3 (Severe).", "risk": "risk-safe"},
+    "Sarcoidosis": {"qs": ["Lungs only or systemic?", "Current steroid use?", "Date of last flare?"], "rating": "Standard (In remission) to Table 4.", "risk": "risk-med"},
+    "Anxiety": {"qs": ["Medication count?", "Hospitalizations?", "Time off work?"], "rating": "Preferred (Mild) to Table 2 (Severe).", "risk": "risk-safe"},
+    "Depression": {"qs": ["Hospitalizations?", "Suicide attempts?", "Electro-shock therapy?"], "rating": "Standard (Mild) to Table 4/Decline (Severe).", "risk": "risk-med"},
+    "Bipolar Disorder": {"qs": ["Type 1 or 2?", "Hospitalizations < 5 years?", "Stable on meds?"], "rating": "Table 2 minimum. Often Table 4+.", "risk": "risk-high"},
+    "ADHD / ADD": {"qs": ["Medication name?", "Any history of drug abuse?", "Stable employment?"], "rating": "Preferred to Standard.", "risk": "risk-safe"},
+    "PTSD": {"qs": ["Source of trauma?", "Disability status?", "Substance abuse history?"], "rating": "Standard (Mild) to Decline.", "risk": "risk-med"},
+    "Crohn's Disease": {"qs": ["Date of last flare?", "Surgery history?", "Biologic meds (Humira)?"], "rating": "Standard (Remission > 2yr) to Table 4.", "risk": "risk-med"},
+    "Ulcerative Colitis": {"qs": ["Colonoscopy results?", "Steroid use?", "Surgery?"], "rating": "Standard (Mild) to Table 3.", "risk": "risk-med"},
+    "Hepatitis C": {"qs": ["Cured/Treated?", "Liver enzyme levels?", "Alcohol use?"], "rating": "Standard (Cured) to Decline (Untreated).", "risk": "risk-safe"},
+    "Fatty Liver": {"qs": ["Liver function tests?", "Alcohol history?", "BMI?"], "rating": "Standard (Mild) to Table 3.", "risk": "risk-med"},
+    "Gastric Bypass / Sleeve": {"qs": ["Date of surgery?", "Current weight stable?", "Complications?"], "rating": "Postpone (<6mos). Standard (After 1yr).", "risk": "risk-safe"},
+    "GERD / Reflux": {"qs": ["Medications?", "Barrett's Esophagus diagnosis?", "Endoscopy results?"], "rating": "Preferred to Standard.", "risk": "risk-safe"},
+    "Seizures / Epilepsy": {"qs": ["Date of last seizure?", "Type (Grand/Petit)?", "Driving restrictions?"], "rating": "Standard (>2yrs seizure free) to Table 4.", "risk": "risk-med"},
+    "Multiple Sclerosis (MS)": {"qs": ["Relapsing or Progressive?", "Can you walk unassisted?", "Date diagnosed?"], "rating": "Table 2 to Decline.", "risk": "risk-high"},
+    "Parkinson's": {"qs": ["Age onset?", "Progression speed?", "Daily living activities?"], "rating": "Table 4 to Decline.", "risk": "risk-high"},
+    "Rheumatoid Arthritis": {"qs": ["Biologic meds?", "Deformity?", "Disability?"], "rating": "Standard to Table 3.", "risk": "risk-med"},
+    "Lupus (SLE)": {"qs": ["Organ involvement (Kidney)?", "Steroid use?", "Date diagnosed?"], "rating": "Table 2 to Decline.", "risk": "risk-high"},
+    "Fibromyalgia": {"qs": ["Disability status?", "Narcotic pain meds?", "Depression history?"], "rating": "Standard to Table 2.", "risk": "risk-safe"},
+    "Gout": {"qs": ["Frequency of attacks?", "Kidney function?", "Alcohol use?"], "rating": "Standard.", "risk": "risk-safe"},
+    "Breast Cancer History": {"qs": ["Date of last treatment?", "Stage/Grade?", "Lymph node involvement?"], "rating": "Flat Extra or Standard > 5yrs.", "risk": "risk-high"},
+    "Prostate Cancer History": {"qs": ["Gleason score?", "Surgery or Radiation?", "Current PSA?"], "rating": "Standard (Low grade/Surgery) to Table 4.", "risk": "risk-high"},
+    "Melanoma History": {"qs": ["Clark Level / Breslow Depth?", "Date removed?", "Chemo?"], "rating": "Standard (In Situ) to Decline (Deep).", "risk": "risk-high"},
+    "Colon Cancer History": {"qs": ["Stage?", "Date of surgery?", "Colonoscopy since?"], "rating": "Postpone (0-2yrs). Table 2 to Standard > 5yrs.", "risk": "risk-high"},
+    "Thyroid Cancer": {"qs": ["Type (Papillary)?", "Radioactive iodine?", "Date treatment ended?"], "rating": "Standard (after 1 year).", "risk": "risk-med"},
+    "Lymphoma (Hodgkins)": {"qs": ["Stage?", "Date of last chemo?", "Recurrence?"], "rating": "Flat Extra or Table Rating (Requires 2-5yr wait).", "risk": "risk-high"},
+    "Kidney Stones": {"qs": ["Single or multiple?", "Surgery required?", "Kidney function normal?"], "rating": "Preferred (Single) to Table 2.", "risk": "risk-safe"},
+    "Chronic Kidney Disease": {"qs": ["What is the Stage (1-5)?", "GFR level?", "Diabetic?"], "rating": "Standard (Stage 1) to Decline (Stage 3+).", "risk": "risk-high"},
+    "Barrett's Esophagus": {"qs": ["Biopsy results?", "Dysplasia?", "Follow up schedule?"], "rating": "Standard to Table 3.", "risk": "risk-med"},
+    "Alcohol History": {"qs": ["Date of last drink?", "AA attendance?", "DUI history?"], "rating": "Postpone (<2yrs sober). Standard (>5yrs sober).", "risk": "risk-high"}
+}
