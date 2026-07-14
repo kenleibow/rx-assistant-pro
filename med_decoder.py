@@ -17,39 +17,40 @@ st.set_page_config(page_title="Rx Field Assistant Pro", page_icon="🛡️", lay
 # ==========================================
 
 def get_gspread_client():
-    import os
-    import json
-    import gspread
-    from google.oauth2.service_account import Credentials
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
-    # 1. Try to build the key from the big Railway JSON variable
-    try:
-        gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
-        if gcp_json:
+    # 1. Single JSON blob (Railway's GCP_SERVICE_ACCOUNT var)
+    gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
+    if gcp_json:
+        try:
             creds_dict = json.loads(gcp_json)
-            # Fix the private key formatting just in case
-            if "private_key" in creds_dict:
-                creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
-            
-            scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+            creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
             return gspread.authorize(creds)
-    except Exception as e:
-        print(f"Railway connection failed: {e}")
+        except Exception as e:
+            print(f"GCP_SERVICE_ACCOUNT credential parsing failed, falling back: {e}")
 
-    # 2. Safety Fallback for local testing/Streamlit Cloud
-    try:
-        import streamlit as st
-        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
-            return gspread.authorize(creds)
-    except:
-        pass
+    # 2. Individual env vars (legacy Railway setup)
+    p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
+    c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
+    p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
+    if p_key and c_email and p_id:
+        creds_dict = {
+            "type": "service_account",
+            "project_id": p_id,
+            "private_key": p_key.replace('\\n', '\n'),
+            "client_email": c_email,
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        return gspread.authorize(creds)
+
+    # 3. Streamlit secrets (local testing / Streamlit Cloud)
+    if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+        return gspread.authorize(creds)
 
     return None
-
-# Load the credentials
-google_secrets = get_gspread_client()
 # ==========================================
 # 🔐 REGISTRATION & LOGGING SECTION
 # ==========================================
@@ -71,29 +72,19 @@ if not st.session_state.logged_in:
                 st.error("⚠️ Please fill in BOTH Name and Email.")
             else:
                 try:
-                    p_key = os.environ.get("PRIVATE_KEY") or os.environ.get("private_key")
-                    c_email = os.environ.get("CLIENT_EMAIL") or os.environ.get("client_email")
-                    p_id = os.environ.get("PROJECT_ID") or os.environ.get("project_id")
-                    s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
+                    client = get_gspread_client()
+                    if client is None:
+                        st.error("🚨 Google Sheets credentials are not configured. Please contact support.")
+                    else:
+                        s_id = os.environ.get("sheet_id") or os.environ.get("SHEET_ID")
+                        sheet = client.open_by_key(s_id).sheet1
 
-                    creds_dict = {
-                        "type": "service_account",
-                        "project_id": p_id,
-                        "private_key": p_key.replace('\\n', '\n'),
-                        "client_email": c_email,
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                    }
-                    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-                    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-                    client = gspread.authorize(creds)
-                    sheet = client.open_by_key(s_id).sheet1
-                    
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([current_time, user_name, user_email])
+                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        sheet.append_row([current_time, user_name, user_email])
 
-                    st.session_state.logged_in = True
-                    st.success("✅ Success! Entering app...")
-                    st.rerun()
+                        st.session_state.logged_in = True
+                        st.success("✅ Success! Entering app...")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"🚨 Connection Error: {e}")
     
