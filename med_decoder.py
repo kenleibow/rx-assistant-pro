@@ -442,7 +442,7 @@ with tab1:
         with st.spinner("Accessing FDA Database..."):
             try:
                 url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{single_drug}"+openfda.generic_name:"{single_drug}"&limit=1'
-                r = requests.get(url)
+                r = requests.get(url, timeout=10)
                 if r.status_code == 200:
                     data = r.json()['results'][0]
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
@@ -479,7 +479,10 @@ with tab1:
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
                         st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
-            except Exception as e: st.error(f"Error: {e}")
+            except requests.exceptions.RequestException:
+                st.error("⚠️ Couldn't reach the drug database right now, please try again.")
+            except Exception:
+                st.error("⚠️ Something went wrong while processing that result. Please try again.")
 
 with tab2:
     col_x, col_y = st.columns([4, 1])
@@ -495,13 +498,18 @@ with tab2:
                 if len(med) < 3: continue
                 try:
                     url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{med}"&limit=1'
-                    r = requests.get(url)
+                    r = requests.get(url, timeout=10)
                     if r.status_code == 200:
                         ind = r.json()['results'][0].get('indications_and_usage', [""])[0]
                         cat = simple_category_check(ind, med)
                         cats.append(cat); valid_meds.append(med)
                         st.write(f"✅ **{med}** identified as *{cat}*")
-                except: pass
+                    else:
+                        st.warning(f"⚠️ Couldn't find **{med}** in the drug database.")
+                except requests.exceptions.RequestException:
+                    st.error(f"⚠️ Couldn't reach the drug database right now for **{med}**. Please try again.")
+                except Exception:
+                    st.warning(f"⚠️ Something went wrong looking up **{med}**.")
             
             combos = check_med_combinations(cats)
             if combos:
