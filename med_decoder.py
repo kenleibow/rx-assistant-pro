@@ -8,6 +8,7 @@ from fpdf import FPDF
 import difflib
 import os
 import json
+import time
 from data import COMMON_DRUGS_LIST, IMPAIRMENT_DATA
 
 # THIS MUST BE THE FIRST STREAMLIT LINE
@@ -348,17 +349,36 @@ def get_product_matrix(risk_level):
 # =========================================================
 # FDA LOOKUPS (cached so repeat searches skip the API)
 # =========================================================
+class FDAUnavailable(Exception):
+    """FDA answered with something other than 200/404 (rate limit, block, server error)."""
+    def __init__(self, status_code):
+        super().__init__(f"FDA API returned HTTP {status_code}")
+        self.status_code = status_code
+
+def _fda_fetch(url, kind):
+    # Returns (200, json) or (404, None). Anything else raises, so st.cache_data
+    # never stores a failure. Logs the status code only (never the drug name).
+    for attempt in (1, 2):
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200: return 200, r.json()
+        if r.status_code == 404: return 404, None
+        try: err_code = r.json().get("error", {}).get("code")
+        except ValueError: err_code = None
+        print(f"[FDA] {kind} lookup: HTTP {r.status_code} error_code={err_code} (attempt {attempt})", flush=True)
+        if attempt == 1 and (r.status_code == 429 or r.status_code >= 500): time.sleep(1)
+        else: break
+    raise FDAUnavailable(r.status_code)
+
+# Callers pass strip()+lower() names so "Metformin" and "metformin" share one cache entry.
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_fda_single_drug(drug_name):
     url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"+openfda.generic_name:"{drug_name}"&limit=1'
-    r = requests.get(url, timeout=10)
-    return r.status_code, (r.json() if r.status_code == 200 else None)
+    return _fda_fetch(url, "single")
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_fda_multi_drug(drug_name):
     url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"&limit=1'
-    r = requests.get(url, timeout=10)
-    return r.status_code, (r.json() if r.status_code == 200 else None)
+    return _fda_fetch(url, "multi")
 
 # =========================================================
 # APP TABS (Rx Assistant Pro Edition)
@@ -374,7 +394,7 @@ with tab1:
     if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
-                status_code, payload = fetch_fda_single_drug(single_drug)
+                status_code, payload = fetch_fda_single_drug(single_drug.strip().lower())
                 if status_code == 200:
                     data = payload['results'][0]
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
@@ -411,6 +431,8 @@ with tab1:
                         st.info(f"💡 Did you mean: **{suggested_word}**?")
                         st.session_state.suggestion = suggested_word
                         st.button(f"Yes, search for {suggested_word}", on_click=fix_spelling_callback, key="spell_check")
+            except FDAUnavailable:
+                st.warning("⚠️ The drug database is busy or temporarily unavailable, so we couldn't check this drug. Please try again in a minute.")
             except requests.exceptions.RequestException:
                 st.error("⚠️ Couldn't reach the drug database right now, please try again.")
             except Exception:
@@ -425,26 +447,34 @@ with tab2:
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
             meds = [m.strip() for m in multi_input.split(',')]
-            cats = []; valid_meds = []
+            cats = []; valid_meds = []; unchecked = []
             for med in meds:
                 if len(med) < 3: continue
                 try:
-                    status_code, payload = fetch_fda_multi_drug(med)
+                    status_code, payload = fetch_fda_multi_drug(med.strip().lower())
                     if status_code == 200:
                         ind = payload['results'][0].get('indications_and_usage', [""])[0]
                         cat = simple_category_check(ind, med)
                         cats.append(cat); valid_meds.append(med)
                         st.write(f"✅ **{med}** identified as *{cat}*")
                     else:
+                        unchecked.append(med)
                         st.warning(f"⚠️ Couldn't find **{med}** in the drug database.")
+                except FDAUnavailable:
+                    unchecked.append(med)
+                    st.warning(f"⚠️ The drug database is busy or temporarily unavailable, so **{med}** couldn't be checked. Please try again in a minute.")
                 except requests.exceptions.RequestException:
+                    unchecked.append(med)
                     st.error(f"⚠️ Couldn't reach the drug database right now for **{med}**. Please try again.")
                 except Exception:
+                    unchecked.append(med)
                     st.warning(f"⚠️ Something went wrong looking up **{med}**.")
-            
+
             combos = check_med_combinations(cats)
             if combos:
                 for c in combos: st.error(c)
+            elif unchecked:
+                st.warning(f"⚠️ Incomplete result: {len(unchecked)} medication(s) could not be checked, so combinations involving them were not evaluated.")
             else: st.success("No major negative combinations detected.")
             
             if valid_meds:
