@@ -6,7 +6,7 @@ Workflow:
      categories, confirm; separate lists with " | "). The info_* columns and reviewer_comment are ignored.
   3. python3 -I tools/drug_table_csv.py import drug_table_review.csv           (dry run: validates, prints a change summary)
      python3 -I tools/drug_table_csv.py import drug_table_review.csv --write   (rewrites the DRUG_INFO block in data.py)
-  4. Review `git diff data.py`, test, commit.
+  4. Review `git diff data.py`, run `python3 -I -m unittest discover -s tests -v`, then commit.
 
 Options: `export [OUT_DIR]` (default: project root) and `--project DIR` to run against a copy of the project.
 Import refuses (and changes nothing) on: duplicate drugs, a blank generic or category, an alias used by two
