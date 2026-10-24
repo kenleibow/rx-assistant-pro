@@ -8,6 +8,7 @@ from fpdf import FPDF
 import difflib
 import os
 import json
+import re
 import time
 from data import COMMON_DRUGS_LIST, IMPAIRMENT_DATA
 
@@ -369,11 +370,40 @@ def _fda_fetch(url, kind):
         else: break
     raise FDAUnavailable(r.status_code)
 
+FDA_PAGE_SIZE = 25
+
+def _label_rank(item, name):
+    # Higher is better: (match tier, has indications text). Tiers:
+    #   4 = typed name is exactly a brand or generic name   (Lipitor, Plavix, "metformin")
+    #   3 = single-ingredient product whose name starts with it ("Metformin Hydrochloride")
+    #   2 = name appears somewhere, e.g. a combination product (sitagliptin AND metformin)
+    #   1 = anything else the FDA search returned
+    o = item.get("openfda", {})
+    brands = [b.lower() for b in o.get("brand_name", [])]
+    generics = [g.lower() for g in o.get("generic_name", [])]
+    names = brands + generics
+    combo = any(re.search(r"\band\b|[,;/+]", g) for g in generics)
+    if name in names: tier = 4
+    elif not combo and any(x.startswith(name + " ") for x in names): tier = 3
+    elif any(name in x for x in names): tier = 2
+    else: tier = 1
+    return (tier, bool(item.get("indications_and_usage")))
+
 # Callers pass strip()+lower() names so "Metformin" and "metformin" share one cache entry.
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_fda_single_drug(drug_name):
-    url = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"+openfda.generic_name:"{drug_name}"&limit=1'
-    return _fda_fetch(url, "single")
+    # The FDA returns matching labels in no useful order (a combination product can come
+    # first), so fetch a page of candidates, keep the best match, and cache only that one.
+    base = f'https://api.fda.gov/drug/label.json?search=openfda.brand_name:"{drug_name}"+openfda.generic_name:"{drug_name}"'
+    best, best_rank = None, None
+    for skip in (0, FDA_PAGE_SIZE):
+        status, payload = _fda_fetch(f"{base}&limit={FDA_PAGE_SIZE}&skip={skip}", "single")
+        if status == 404: break
+        for item in payload["results"]:
+            rank = _label_rank(item, drug_name)
+            if best_rank is None or rank > best_rank: best, best_rank = item, rank
+        if best_rank[0] >= 3 or len(payload["results"]) < FDA_PAGE_SIZE: break
+    return (200, {"results": [best]}) if best else (404, None)
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_fda_multi_drug(drug_name):
