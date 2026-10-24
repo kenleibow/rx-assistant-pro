@@ -11,6 +11,7 @@ import json
 import re
 import time
 from data import COMMON_DRUGS_LIST, IMPAIRMENT_DATA
+from drug_logic import resolve_drugs, drug_categories, drug_notes, hand_written_insight, category_insight
 
 # THIS MUST BE THE FIRST STREAMLIT LINE
 st.set_page_config(page_title="Rx Field Assistant Pro", page_icon="🛡️", layout="wide")
@@ -283,15 +284,15 @@ def create_pdf(title, items_list, analysis_text, risk_level=None, fda_text_conte
 # =========================================================
 #  LOGIC ENGINES
 # =========================================================
-def analyze_single_med(indication_text, brand_name):
-    text = indication_text.lower(); name = brand_name.lower()
-    if "metformin" in name: return {"risk": "Diabetes Type 2", "style": "risk-med", "questions": ["Is this for Pre-Diabetes or Type 2?", "What is your A1C?", "Any neuropathy?"], "rating": "Standard (if A1C < 7.0) to Table 2."}
-    elif "lisinopril" in name or "amlodipine" in name: return {"risk": "Hypertension (High BP)", "style": "risk-safe", "questions": ["Is BP controlled?", "Last reading?", "Do you take >2 BP meds?"], "rating": "Preferred Best possible."}
-    elif "plavix" in name or "clopidogrel" in name: return {"risk": "Heart Disease / Stroke", "style": "risk-high", "questions": ["History of TIA/Stroke?", "Stent placement?"], "rating": "Standard to Decline."}
-    elif "abilify" in name or "aripiprazole" in name: return {"risk": "Bipolar / Depression / Schizophrenia", "style": "risk-high", "questions": ["Hospitalizations in last 5 years?", "Suicide attempts?"], "rating": "Complex. Bipolar = Table Rating."}
-    elif "entresto" in name: return {"risk": "Heart Failure (CHF)", "style": "risk-high", "questions": ["What is your Ejection Fraction?", "Any hospitalizations recently?"], "rating": "Likely Decline."}
+def analyze_single_med(indication_text, brand_name, label=None):
+    text = indication_text.lower()
+    keys = resolve_drugs(brand_name, label)   # brand/generic aliases resolve to one drug-table row
+    insight = hand_written_insight(keys)
+    if insight: return insight
     if "metastatic" in text: return {"risk": "FLAGGED: Cancer (Severe)", "style": "risk-high", "questions": ["Diagnosis date?", "Treatment status?"], "rating": "Likely Decline."}
     if "hiv" in text: return {"risk": "FLAGGED: HIV/AIDS", "style": "risk-high", "questions": ["Current Viral Load?", "CD4 Count?"], "rating": "Table Rating to Decline."}
+    insight = category_insight(keys)
+    if insight: return insight
     return {"risk": "General / Maintenance", "style": "risk-safe", "questions": ["Why was this prescribed?", "Any symptoms?"], "rating": "Depends on condition."}
 
 def check_med_combinations(found_categories):
@@ -424,14 +425,22 @@ with tab1:
     if single_drug:
         with st.spinner("Accessing FDA Database..."):
             try:
-                status_code, payload = fetch_fda_single_drug(single_drug.strip().lower())
+                typed = single_drug.strip().lower()
+                status_code, payload = fetch_fda_single_drug(typed)
+                matched_via = None
+                if status_code != 200:   # FDA doesn't list this brand/spelling: retry with the generic name from the drug table
+                    for generic in resolve_drugs(typed):
+                        if generic == typed: continue
+                        status_code, payload = fetch_fda_single_drug(generic)
+                        if status_code == 200: matched_via = generic; break
                 if status_code == 200:
                     data = payload['results'][0]
                     brand = data['openfda'].get('brand_name', [single_drug])[0]
                     indications = data.get('indications_and_usage', ["No text found"])[0]
-                    insight = analyze_single_med(indications, single_drug)
+                    insight = analyze_single_med(indications, single_drug, data)
                     
                     st.success(f"**Found:** {brand}")
+                    if matched_via: st.caption(f"Matched '{single_drug.strip()}' as {matched_via} in the FDA database.")
                     
                     c1, c2 = st.columns([1, 2])
                     with c1:
@@ -477,38 +486,60 @@ with tab2:
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
             meds = [m.strip() for m in multi_input.split(',')]
-            cats = []; valid_meds = []; unchecked = []
+            cats = []; valid_meds = []; unchecked = []; uncategorized = []; confirms = []
             for med in meds:
                 if len(med) < 3: continue
-                try:
-                    status_code, payload = fetch_fda_multi_drug(med.strip().lower())
-                    if status_code == 200:
-                        ind = payload['results'][0].get('indications_and_usage', [""])[0]
-                        cat = simple_category_check(ind, med)
-                        cats.append(cat); valid_meds.append(med)
-                        st.write(f"✅ **{med}** identified as *{cat}*")
-                    else:
+                keys = resolve_drugs(med)   # known brand/generic names come straight from the drug table
+                ind = ""
+                if not keys:
+                    try:
+                        status_code, payload = fetch_fda_multi_drug(med.strip().lower())
+                        if status_code != 200:
+                            unchecked.append(med)
+                            st.warning(f"⚠️ Couldn't find **{med}** in the drug database.")
+                            continue
+                        label = payload['results'][0]
+                        ind = label.get('indications_and_usage', [""])[0]
+                        keys = resolve_drugs(med, label)
+                    except FDAUnavailable:
                         unchecked.append(med)
-                        st.warning(f"⚠️ Couldn't find **{med}** in the drug database.")
-                except FDAUnavailable:
-                    unchecked.append(med)
-                    st.warning(f"⚠️ The drug database is busy or temporarily unavailable, so **{med}** couldn't be checked. Please try again in a minute.")
-                except requests.exceptions.RequestException:
-                    unchecked.append(med)
-                    st.error(f"⚠️ Couldn't reach the drug database right now for **{med}**. Please try again.")
-                except Exception:
-                    unchecked.append(med)
-                    st.warning(f"⚠️ Something went wrong looking up **{med}**.")
+                        st.warning(f"⚠️ The drug database is busy or temporarily unavailable, so **{med}** couldn't be checked. Please try again in a minute.")
+                        continue
+                    except requests.exceptions.RequestException:
+                        unchecked.append(med)
+                        st.error(f"⚠️ Couldn't reach the drug database right now for **{med}**. Please try again.")
+                        continue
+                    except Exception:
+                        unchecked.append(med)
+                        st.warning(f"⚠️ Something went wrong looking up **{med}**.")
+                        continue
+                cat_list = drug_categories(keys) if keys else [simple_category_check(ind, med)]
+                generic = ", ".join(keys)
+                alias = f" ({generic})" if keys and generic != med.strip().lower() else ""
+                cats.extend(cat_list); valid_meds.append(med)
+                if cat_list == ["Other"]:
+                    uncategorized.append(med)
+                    st.warning(f"⚠️ **{med}**{alias} has no category yet, so it was not included in the combination check.")
+                else:
+                    st.write(f"✅ **{med}**{alias} identified as *{' / '.join(cat_list)}*")
+                for _, note in drug_notes(keys): confirms.append((med, note))
 
             combos = check_med_combinations(cats)
-            if combos:
-                for c in combos: st.error(c)
-            elif unchecked:
-                st.warning(f"⚠️ Incomplete result: {len(unchecked)} medication(s) could not be checked, so combinations involving them were not evaluated.")
-            else: st.success("No major negative combinations detected.")
-            
+            for c in combos: st.error(c)
+            for med_name, note in confirms: st.info(f"ℹ️ **{med_name}**: {note}")
+            if unchecked: st.warning(f"⚠️ Incomplete result: could not check {', '.join(unchecked)}, so combinations involving them were not evaluated.")
+            if uncategorized: st.warning(f"⚠️ No category yet for {', '.join(uncategorized)}, so combinations involving them were not evaluated.")
+            incomplete = bool(unchecked or uncategorized)
+            if not combos:
+                if incomplete: st.warning("No major negative combinations detected among the medications that could be evaluated, but this result is incomplete (see above).")
+                elif confirms: st.success("No major negative combinations detected, based on each medication's usual primary use. Confirm the reasons noted above.")
+                else: st.success("No major negative combinations detected.")
+
             if valid_meds:
-                combo_text = combos if combos else ["No high-risk combinations found."]
+                combo_text = list(combos) if combos else ["No high-risk combinations found" + (" among the medications that could be evaluated." if incomplete else ".")]
+                if unchecked: combo_text.append("NOT EVALUATED (could not be looked up): " + ", ".join(unchecked))
+                if uncategorized: combo_text.append("NOT EVALUATED (no category yet): " + ", ".join(uncategorized))
+                for med_name, note in confirms: combo_text.append(f"CONFIRM - {med_name}: {note}")
                 pdf_bytes = create_pdf("Multi-Med Analysis", valid_meds, combo_text)
                 st.download_button("📄 Download Combo Report", data=pdf_bytes, file_name="combo_report.pdf", key="pdf_multi")
 

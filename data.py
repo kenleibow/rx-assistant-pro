@@ -15,7 +15,7 @@ COMMON_DRUGS_LIST = [
     "Lexapro", "Zoloft", "Prozac", "Wellbutrin", "Abilify", "Seroquel",
     "Xanax", "Klonopin", "Valium", "Ativan", "Ambien", "Lunesta",
     "Viagra", "Cialis", "Levitra", "Allopurinol", "Colchicine", "Warfarin",
-    "Coumadin", "Digoxin", "Amiodarone", "Flecanide", "Sotalol", "Nitroglycerin",
+    "Coumadin", "Digoxin", "Amiodarone", "Flecainide", "Sotalol", "Nitroglycerin",
     "Ranolazine", "Imdur", "Bisoprolol", "Carvedilol", "Labetalol"
 ]
 
@@ -70,4 +70,134 @@ IMPAIRMENT_DATA = {
     "Chronic Kidney Disease": {"qs": ["What is the Stage (1-5)?", "GFR level?", "Diabetic?"], "rating": "Standard (Stage 1) to Decline (Stage 3+).", "risk": "risk-high"},
     "Barrett's Esophagus": {"qs": ["Biopsy results?", "Dysplasia?", "Follow up schedule?"], "rating": "Standard to Table 3.", "risk": "risk-med"},
     "Alcohol History": {"qs": ["Date of last drink?", "AA attendance?", "DUI history?"], "rating": "Postpone (<2yrs sober). Standard (>5yrs sober).", "risk": "risk-high"}
+}
+
+# =========================================================
+#  DRUG TABLE  (*** DRAFT - needs underwriter review ***)
+# =========================================================
+# One row per drug, keyed by generic name (lowercase). Edit freely:
+#   "aliases"    other names that mean the same drug: brands, spellings, common forms.
+#                Typing any alias is treated exactly like typing the generic name.
+#   "categories" what the drug tells an underwriter. These feed the combination rules:
+#                  Diabetes + Hypertension + Cholesterol -> metabolic syndrome note
+#                  Diabetes + Cardiac                    -> HIGH RISK warning
+#                Other categories are recorded but currently trigger no combination rule.
+#                "Other" means NOT categorized yet: Tab 2 names the drug and qualifies its
+#                "no combinations" message instead of reassuring.
+#   "confirm"    (optional) shown in Tab 2 when the drug could mean different things
+#                (e.g. a blood thinner for AFib vs. a leg clot). Leave out if not needed.
+# A drug not in this table falls back to the old guess from the FDA label text.
+DRUG_INFO = {
+    # --- Diabetes ---
+    "metformin": {"aliases": ["glucophage", "metformin hydrochloride", "metformin hcl", "fortamet", "glumetza"], "categories": ["Diabetes"]},
+    "glipizide": {"aliases": ["glucotrol"], "categories": ["Diabetes"]},
+    "sitagliptin": {"aliases": ["januvia"], "categories": ["Diabetes"]},
+    "dapagliflozin": {"aliases": ["farxiga"], "categories": ["Diabetes"], "confirm": "Also prescribed for heart failure and kidney disease - confirm the reason."},
+    "empagliflozin": {"aliases": ["jardiance"], "categories": ["Diabetes"], "confirm": "Also prescribed for heart failure and kidney disease - confirm the reason."},
+    "semaglutide": {"aliases": ["ozempic", "rybelsus"], "categories": ["Diabetes"], "confirm": "The same drug is sold as Wegovy for weight loss - confirm the reason."},
+    "tirzepatide": {"aliases": ["mounjaro", "zepbound"], "categories": ["Diabetes"], "confirm": "Zepbound is the weight-loss brand - confirm the reason."},
+    "dulaglutide": {"aliases": ["trulicity"], "categories": ["Diabetes"]},
+    "wegovy": {"aliases": [], "categories": ["Weight Management"], "confirm": "Weight-loss use - build/BMI rating applies; ask about diabetes and heart history."},
+    # --- Blood pressure ---
+    "lisinopril": {"aliases": ["zestril", "prinivil", "qbrelis"], "categories": ["Hypertension"]},
+    "amlodipine": {"aliases": ["norvasc"], "categories": ["Hypertension"]},
+    "losartan": {"aliases": ["cozaar", "losartan potassium"], "categories": ["Hypertension"]},
+    "hydrochlorothiazide": {"aliases": ["hctz", "microzide"], "categories": ["Hypertension"]},
+    "olmesartan": {"aliases": ["benicar"], "categories": ["Hypertension"]},
+    "labetalol": {"aliases": ["trandate", "normodyne"], "categories": ["Hypertension"]},
+    "metoprolol": {"aliases": ["lopressor", "toprol xl", "metoprolol tartrate", "metoprolol succinate"], "categories": ["Hypertension"], "confirm": "Beta-blocker also prescribed for angina, a prior heart attack, heart failure and AFib - confirm the reason."},
+    "bisoprolol": {"aliases": ["zebeta"], "categories": ["Hypertension"], "confirm": "Beta-blocker also prescribed for heart failure - confirm the reason."},
+    "furosemide": {"aliases": ["lasix"], "categories": ["Hypertension"], "confirm": "Water pill often prescribed for heart failure or swelling - confirm the reason."},
+    # --- Cholesterol ---
+    "atorvastatin": {"aliases": ["lipitor"], "categories": ["Cholesterol"]},
+    "simvastatin": {"aliases": ["zocor"], "categories": ["Cholesterol"]},
+    "rosuvastatin": {"aliases": ["crestor"], "categories": ["Cholesterol"]},
+    # --- Heart / blood thinners ---
+    "clopidogrel": {"aliases": ["plavix"], "categories": ["Cardiac"]},
+    "sacubitril and valsartan": {"aliases": ["entresto"], "categories": ["Cardiac"]},
+    "digoxin": {"aliases": ["lanoxin"], "categories": ["Cardiac"]},
+    "amiodarone": {"aliases": ["pacerone", "cordarone"], "categories": ["Cardiac"]},
+    "flecainide": {"aliases": ["tambocor", "flecanide"], "categories": ["Cardiac"]},
+    "sotalol": {"aliases": ["betapace"], "categories": ["Cardiac"]},
+    "nitroglycerin": {"aliases": ["nitrostat"], "categories": ["Cardiac"]},
+    "ranolazine": {"aliases": ["ranexa"], "categories": ["Cardiac"]},
+    "isosorbide mononitrate": {"aliases": ["imdur"], "categories": ["Cardiac"]},
+    "carvedilol": {"aliases": ["coreg"], "categories": ["Cardiac"], "confirm": "Prescribed for heart failure or for high blood pressure - confirm which."},
+    "apixaban": {"aliases": ["eliquis"], "categories": ["Cardiac"], "confirm": "Blood thinner for AFib or for a blood clot (DVT/PE) - confirm which."},
+    "rivaroxaban": {"aliases": ["xarelto"], "categories": ["Cardiac"], "confirm": "Blood thinner for AFib or for a blood clot (DVT/PE) - confirm which."},
+    "dabigatran": {"aliases": ["pradaxa"], "categories": ["Cardiac"], "confirm": "Blood thinner for AFib or for a blood clot (DVT/PE) - confirm which."},
+    "warfarin": {"aliases": ["coumadin", "jantoven"], "categories": ["Cardiac"], "confirm": "Blood thinner for AFib, a heart valve or a blood clot - confirm which."},
+    "aspirin": {"aliases": ["bayer", "ecotrin", "baby aspirin", "low dose aspirin"], "categories": ["Other"], "confirm": "Daily low-dose aspirin may mean prevention or existing heart disease - confirm the reason."},
+    # --- Thyroid / stomach / gout ---
+    "levothyroxine": {"aliases": ["synthroid", "levoxyl", "unithroid", "euthyrox"], "categories": ["Thyroid"]},
+    "omeprazole": {"aliases": ["prilosec"], "categories": ["GI"]},
+    "pantoprazole": {"aliases": ["protonix"], "categories": ["GI"]},
+    "esomeprazole": {"aliases": ["nexium"], "categories": ["GI"]},
+    "allopurinol": {"aliases": ["zyloprim"], "categories": ["Gout"]},
+    "colchicine": {"aliases": ["colcrys", "mitigare"], "categories": ["Gout"]},
+    # --- Breathing ---
+    "montelukast": {"aliases": ["singulair"], "categories": ["Respiratory"]},
+    "fluticasone": {"aliases": ["flonase", "flovent", "fluticasone propionate"], "categories": ["Respiratory"]},
+    "albuterol": {"aliases": ["ventolin", "proair", "proventil"], "categories": ["Respiratory"]},
+    "fluticasone and salmeterol": {"aliases": ["advair", "advair diskus", "wixela"], "categories": ["Respiratory"], "confirm": "Asthma vs. COPD changes the rating - ask which."},
+    "budesonide and formoterol": {"aliases": ["symbicort", "breyna"], "categories": ["Respiratory"], "confirm": "Asthma vs. COPD changes the rating - ask which."},
+    "tiotropium": {"aliases": ["spiriva"], "categories": ["Respiratory"], "confirm": "Mainly a COPD medication - ask about severity, oxygen use and hospitalizations."},
+    # --- Mental health / sleep ---
+    "sertraline": {"aliases": ["zoloft"], "categories": ["Mental Health"]},
+    "escitalopram": {"aliases": ["lexapro"], "categories": ["Mental Health"]},
+    "fluoxetine": {"aliases": ["prozac", "sarafem"], "categories": ["Mental Health"]},
+    "venlafaxine": {"aliases": ["effexor", "effexor xr"], "categories": ["Mental Health"]},
+    "duloxetine": {"aliases": ["cymbalta"], "categories": ["Mental Health"]},
+    "trazodone": {"aliases": ["desyrel"], "categories": ["Mental Health"]},
+    "bupropion": {"aliases": ["wellbutrin", "zyban", "bupropion hcl"], "categories": ["Mental Health"], "confirm": "Also prescribed for smoking cessation - ask about tobacco use."},
+    "aripiprazole": {"aliases": ["abilify"], "categories": ["Psychiatric (Serious)"]},
+    "quetiapine": {"aliases": ["seroquel"], "categories": ["Psychiatric (Serious)"]},
+    "alprazolam": {"aliases": ["xanax"], "categories": ["Anxiety / Sedative"]},
+    "clonazepam": {"aliases": ["klonopin"], "categories": ["Anxiety / Sedative"], "confirm": "Also used for seizures and panic disorder - ask which."},
+    "diazepam": {"aliases": ["valium"], "categories": ["Anxiety / Sedative"]},
+    "lorazepam": {"aliases": ["ativan"], "categories": ["Anxiety / Sedative"]},
+    "zolpidem": {"aliases": ["ambien"], "categories": ["Sleep"]},
+    "eszopiclone": {"aliases": ["lunesta"], "categories": ["Sleep"]},
+    # --- Pain / inflammation / immune ---
+    "gabapentin": {"aliases": ["neurontin", "gralise"], "categories": ["Pain"], "confirm": "Used for nerve pain and for seizures - confirm the reason."},
+    "pregabalin": {"aliases": ["lyrica"], "categories": ["Pain"], "confirm": "Used for nerve pain, fibromyalgia and seizures - ask which."},
+    "tramadol": {"aliases": ["ultram"], "categories": ["Pain"], "confirm": "Opioid - ask how long and how often it has been taken."},
+    "meloxicam": {"aliases": ["mobic"], "categories": ["Pain"]},
+    "prednisone": {"aliases": ["deltasone", "rayos"], "categories": ["Steroid"], "confirm": "Reason varies widely (asthma/COPD, arthritis, lupus, IBD, transplant) - ask why."},
+    "adalimumab": {"aliases": ["humira"], "categories": ["Autoimmune"], "confirm": "Used for RA, psoriasis, Crohn's/colitis and more - ask which."},
+    "etanercept": {"aliases": ["enbrel"], "categories": ["Autoimmune"], "confirm": "Used for RA, psoriasis and more - ask which."},
+    # --- Urology ---
+    "tamsulosin": {"aliases": ["flomax"], "categories": ["Urology"]},
+    "sildenafil": {"aliases": ["viagra"], "categories": ["Urology"]},
+    "tadalafil": {"aliases": ["cialis"], "categories": ["Urology"]},
+    "vardenafil": {"aliases": ["levitra", "staxyn"], "categories": ["Urology"]},
+}
+
+# Hand-written drug analyses (moved unchanged from Tab 1). Checked in this order.
+_HEART_INSIGHT = {"risk": "Heart Disease / Stroke", "style": "risk-high", "questions": ["History of TIA/Stroke?", "Stent placement?"], "rating": "Standard to Decline."}
+DRUG_INSIGHTS = {
+    "metformin": {"risk": "Diabetes Type 2", "style": "risk-med", "questions": ["Is this for Pre-Diabetes or Type 2?", "What is your A1C?", "Any neuropathy?"], "rating": "Standard (if A1C < 7.0) to Table 2."},
+    "lisinopril": {"risk": "Hypertension (High BP)", "style": "risk-safe", "questions": ["Is BP controlled?", "Last reading?", "Do you take >2 BP meds?"], "rating": "Preferred Best possible."},
+    "amlodipine": {"risk": "Hypertension (High BP)", "style": "risk-safe", "questions": ["Is BP controlled?", "Last reading?", "Do you take >2 BP meds?"], "rating": "Preferred Best possible."},
+    "clopidogrel": _HEART_INSIGHT,
+    "aripiprazole": {"risk": "Bipolar / Depression / Schizophrenia", "style": "risk-high", "questions": ["Hospitalizations in last 5 years?", "Suicide attempts?"], "rating": "Complex. Bipolar = Table Rating."},
+    "sacubitril and valsartan": {"risk": "Heart Failure (CHF)", "style": "risk-high", "questions": ["What is your Ejection Fraction?", "Any hospitalizations recently?"], "rating": "Likely Decline."},
+}
+
+# Starting rating/questions for a drug with no hand-written analysis, by category.
+# A text value borrows that entry from IMPAIRMENT_DATA above; a dict is written inline;
+# None (or a missing category) means "no default yet" -> generic "depends on condition".
+CATEGORY_DEFAULTS = {
+    "Diabetes": "Diabetes Type 2",
+    "Hypertension": "Hypertension (High BP)",
+    "Thyroid": "Hypothyroidism",
+    "GI": "GERD / Reflux",
+    "Gout": "Gout",
+    "Mental Health": "Depression",
+    "Psychiatric (Serious)": "Bipolar Disorder",
+    "Anxiety / Sedative": "Anxiety",
+    "Autoimmune": "Rheumatoid Arthritis",
+    "Cholesterol": {"risk": "Cholesterol / Lipids", "style": "risk-safe", "questions": ["Current LDL / total cholesterol?", "Taking it for prevention or after a heart event?", "Any heart or diabetes history?"], "rating": "Preferred to Standard (controlled)."},
+    "Cardiac": {"risk": "Heart Disease / Rhythm", "style": "risk-high", "questions": ["What heart condition is this for?", "Date of last cardiac event or hospitalization?", "Ejection fraction (if heart failure)?"], "rating": "Table 2 to Decline (depends on condition and control)."},
+    "Respiratory": {"risk": "Asthma / COPD", "style": "risk-med", "questions": ["Asthma or COPD?", "Oral steroids or hospitalizations?", "Tobacco use?"], "rating": "Standard (Mild asthma) to Decline (Severe COPD / Smoker)."},
 }
