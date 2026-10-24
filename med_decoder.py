@@ -486,7 +486,7 @@ with tab2:
     if st.button("Analyze Combinations", key="analyze_btn"):
         if multi_input:
             meds = [m.strip() for m in multi_input.split(',')]
-            cats = []; valid_meds = []; unchecked = []; uncategorized = []; confirms = []
+            cats = []; valid_meds = []; unchecked = []; uncategorized = []; estimated = []; confirms = []
             for med in meds:
                 if len(med) < 3: continue
                 keys = resolve_drugs(med)   # known brand/generic names come straight from the drug table
@@ -520,6 +520,9 @@ with tab2:
                 if cat_list == ["Other"]:
                     uncategorized.append(med)
                     st.warning(f"⚠️ **{med}**{alias} has no category yet, so it was not included in the combination check.")
+                elif not keys:   # not in the drug table: category is only a guess from the FDA label text
+                    estimated.append(med)
+                    st.warning(f"❓ **{med}**: category *{' / '.join(cat_list)}* is only an estimate from the FDA label text (not in the drug table, unverified).")
                 else:
                     st.write(f"✅ **{med}**{alias} identified as *{' / '.join(cat_list)}*")
                 for _, note in drug_notes(keys): confirms.append((med, note))
@@ -529,14 +532,17 @@ with tab2:
             for med_name, note in confirms: st.info(f"ℹ️ **{med_name}**: {note}")
             if unchecked: st.warning(f"⚠️ Incomplete result: could not check {', '.join(unchecked)}, so combinations involving them were not evaluated.")
             if uncategorized: st.warning(f"⚠️ No category yet for {', '.join(uncategorized)}, so combinations involving them were not evaluated.")
+            if estimated: st.warning(f"⚠️ Estimated category (not in the drug table): {', '.join(estimated)}. Combination results involving them are unverified.")
             incomplete = bool(unchecked or uncategorized)
             if not combos:
                 if incomplete: st.warning("No major negative combinations detected among the medications that could be evaluated, but this result is incomplete (see above).")
+                elif estimated: st.warning("No major negative combinations detected, but this relies on estimated categories (see above) and is unverified.")
                 elif confirms: st.success("No major negative combinations detected, based on each medication's usual primary use. Confirm the reasons noted above.")
                 else: st.success("No major negative combinations detected.")
 
             if valid_meds:
-                combo_text = list(combos) if combos else ["No high-risk combinations found" + (" among the medications that could be evaluated." if incomplete else ".")]
+                combo_text = list(combos) if combos else ["No high-risk combinations found" + (" among the medications that could be evaluated." if incomplete else " (unverified: includes estimated categories)." if estimated else ".")]
+                if estimated: combo_text.append("ESTIMATED CATEGORY (guessed from FDA label text, not in drug table): " + ", ".join(estimated))
                 if unchecked: combo_text.append("NOT EVALUATED (could not be looked up): " + ", ".join(unchecked))
                 if uncategorized: combo_text.append("NOT EVALUATED (no category yet): " + ", ".join(uncategorized))
                 for med_name, note in confirms: combo_text.append(f"CONFIRM - {med_name}: {note}")
